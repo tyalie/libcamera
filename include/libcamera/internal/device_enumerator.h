@@ -41,13 +41,13 @@ public:
 	virtual int init() = 0;
 	virtual int enumerate() = 0;
 
+	void addDevice(std::unique_ptr<MediaDeviceBase> media);
 	std::shared_ptr<MediaDeviceBase> search(const DeviceMatch &dm);
 
 	Signal<> devicesAdded;
 
 protected:
 	std::unique_ptr<MediaDeviceBase> createDevice(const std::string &deviceNode);
-	void addDevice(std::unique_ptr<MediaDeviceBase> media);
 	void removeDevice(const std::string &deviceNode);
 
 private:

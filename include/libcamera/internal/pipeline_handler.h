@@ -80,6 +80,7 @@ protected:
 	virtual void releaseDevice(Camera *camera);
 
 	CameraManager *manager_;
+	std::vector<std::shared_ptr<MediaDeviceBase>> mediaDevices_;
 
 private:
 	void unlockMediaDevices();
@@ -90,7 +91,6 @@ private:
 	void doQueueRequest(Request *request);
 	void doQueueRequests();
 
-	std::vector<std::shared_ptr<MediaDeviceBase>> mediaDevices_;
 	std::vector<std::weak_ptr<Camera>> cameras_;
 
 	std::queue<Request *> waitingRequests_;

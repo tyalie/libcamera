@@ -9,6 +9,7 @@
 
 #include <libcamera/camera.h>
 
+#include "libcamera/internal/media_device_virtual.h"
 #include "libcamera/internal/pipeline_handler.h"
 
 namespace libcamera {
@@ -41,6 +42,9 @@ public:
 	int queueRequestDevice(Camera *camera, Request *request) override;
 
 	bool match(DeviceEnumerator *enumerator) override;
+
+private:
+	std::shared_ptr<MediaDeviceVirtual> mediaDeviceVirtual_;
 };
 
 VirtualCameraConfiguration::VirtualCameraConfiguration()
@@ -54,7 +58,7 @@ CameraConfiguration::Status VirtualCameraConfiguration::validate()
 }
 
 PipelineHandlerVirtual::PipelineHandlerVirtual(CameraManager *manager)
-	: PipelineHandler(manager)
+	: PipelineHandler(manager), mediaDeviceVirtual_(new MediaDeviceVirtual("virtual"))
 {
 }
 
@@ -104,7 +108,8 @@ int PipelineHandlerVirtual::queueRequestDevice(Camera *camera, Request *request)
 bool PipelineHandlerVirtual::match(DeviceEnumerator *enumerator)
 {
 	(void)enumerator;
-	return false;
+	mediaDevices_.push_back(mediaDeviceVirtual_);
+	return false; // Prevent infinite loops for now
 }
 
 REGISTER_PIPELINE_HANDLER(PipelineHandlerVirtual)
