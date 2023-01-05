@@ -63,63 +63,13 @@ LOG_DEFINE_CATEGORY(MediaDevice)
  * populate() before the media graph can be queried.
  */
 MediaDevice::MediaDevice(const std::string &deviceNode)
-	: deviceNode_(deviceNode), valid_(false), acquired_(false)
+	: MediaDeviceBase(deviceNode)
 {
 }
 
 MediaDevice::~MediaDevice()
 {
 	fd_.reset();
-	clear();
-}
-
-std::string MediaDevice::logPrefix() const
-{
-	return deviceNode() + "[" + driver() + "]";
-}
-
-/**
- * \brief Claim a device for exclusive use
- *
- * The device claiming mechanism offers simple media device access arbitration
- * between multiple users. When the media device is created, it is available to
- * all users. Users can query the media graph to determine whether they can
- * support the device and, if they do, claim the device for exclusive use. Other
- * users are then expected to skip over media devices in use as reported by the
- * busy() function.
- *
- * Once claimed the device shall be released by its user when not needed anymore
- * by calling the release() function. Acquiring the media device opens a file
- * descriptor to the device which is kept open until release() is called.
- *
- * Exclusive access is only guaranteed if all users of the media device abide by
- * the device claiming mechanism, as it isn't enforced by the media device
- * itself.
- *
- * \return true if the device was successfully claimed, or false if it was
- * already in use
- * \sa release(), busy()
- */
-bool MediaDevice::acquire()
-{
-	if (acquired_)
-		return false;
-
-	if (open())
-		return false;
-
-	acquired_ = true;
-	return true;
-}
-
-/**
- * \brief Release a device previously claimed for exclusive use
- * \sa acquire(), busy()
- */
-void MediaDevice::release()
-{
-	close();
-	acquired_ = false;
 }
 
 /**
@@ -291,12 +241,6 @@ done:
  */
 
 /**
- * \fn MediaDevice::deviceNode()
- * \brief Retrieve the media device node path
- * \return The MediaDevice deviceNode path
- */
-
-/**
  * \fn MediaDevice::model()
  * \brief Retrieve the media device model name
  * \return The MediaDevice model name
@@ -319,26 +263,6 @@ done:
  *
  * \return The MediaDevice hardware revision
  */
-
-/**
- * \fn MediaDevice::entities()
- * \brief Retrieve the list of entities in the media graph
- * \return The list of MediaEntities registered in the MediaDevice
- */
-
-/**
- * \brief Return the MediaEntity with name \a name
- * \param[in] name The entity name
- * \return The entity with \a name, or nullptr if no such entity is found
- */
-MediaEntity *MediaDevice::getEntityByName(const std::string &name) const
-{
-	for (MediaEntity *e : entities_)
-		if (e->name() == name)
-			return e;
-
-	return nullptr;
-}
 
 /**
  * \brief Retrieve the MediaLink connecting two pads, identified by entity
@@ -454,16 +378,6 @@ int MediaDevice::disableLinks()
 }
 
 /**
- * \var MediaDevice::disconnected
- * \brief Signal emitted when the media device is disconnected from the system
- *
- * This signal is emitted when the device enumerator detects that the media
- * device has been removed from the system. For hot-pluggable devices this is
- * usually caused by physical device disconnection, but can also result from
- * driver unloading for most devices. The media device is passed as a parameter.
- */
-
-/**
  * \brief Open the media device
  *
  * \return 0 on success or a negative error code otherwise
@@ -565,14 +479,9 @@ void MediaDevice::clear()
 		delete o.second;
 
 	objects_.clear();
-	entities_.clear();
-	valid_ = false;
-}
 
-/**
- * \var MediaDevice::entities_
- * \brief Global list of media entities in the media graph
- */
+	MediaDeviceBase::clear();
+}
 
 /**
  * \brief Find the interface associated with an entity
