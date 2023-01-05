@@ -11,6 +11,7 @@
 #include <libcamera/control_ids.h>
 #include <libcamera/controls.h>
 #include <libcamera/formats.h>
+#include <libcamera/property_ids.h>
 
 #include "libcamera/internal/camera.h"
 #include "libcamera/internal/media_device_virtual.h"
@@ -19,6 +20,10 @@
 namespace libcamera {
 
 LOG_DEFINE_CATEGORY(VIRTUAL)
+
+static const ControlInfoMap::Map VirtualControls = {
+	{ &controls::draft::PipelineDepth, ControlInfo(2, 3) },
+};
 
 uint64_t CurrentTimestamp()
 {
@@ -271,6 +276,16 @@ bool PipelineHandlerVirtual::match(DeviceEnumerator *enumerator)
 	data->supportedResolutions_.resize(2);
 	data->supportedResolutions_[0] = { .size = Size(1920, 1080), .frame_rates = { 30 }, .formats = { "YCbCr_420_888" } };
 	data->supportedResolutions_[1] = { .size = Size(1280, 720), .frame_rates = { 30, 60 }, .formats = { "YCbCr_420_888" } };
+
+	data->properties_.set(properties::Location, properties::CameraLocationFront);
+	data->properties_.set(properties::Model, "Virtual Video Device");
+	data->properties_.set(properties::PixelArrayActiveAreas, { Rectangle(Size(1920, 1080)) });
+
+	// TODO: Set FrameDurationLimits based on config.
+	ControlInfoMap::Map controls = VirtualControls;
+	int64_t min_frame_duration = 30, max_frame_duration = 60;
+	controls[&controls::FrameDurationLimits] = ControlInfo(min_frame_duration, max_frame_duration);
+	data->controlInfo_ = ControlInfoMap(std::move(controls), controls::controls);
 
 	/* Create and register the camera. */
 	std::set<Stream *> streams{ &data->stream_ };
