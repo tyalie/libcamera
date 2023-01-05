@@ -8,6 +8,7 @@
 #include <libcamera/base/log.h>
 
 #include <libcamera/camera.h>
+#include <libcamera/formats.h>
 
 #include "libcamera/internal/camera.h"
 #include "libcamera/internal/media_device_virtual.h"
@@ -20,6 +21,11 @@ LOG_DEFINE_CATEGORY(VIRTUAL)
 class VirtualCameraData : public Camera::Private
 {
 public:
+	struct Resolution {
+		Size size;
+		std::vector<int> frame_rates;
+		std::vector<std::string> formats;
+	};
 	VirtualCameraData(PipelineHandler *pipe)
 		: Camera::Private(pipe)
 	{
@@ -27,15 +33,22 @@ public:
 
 	~VirtualCameraData() = default;
 
+	std::vector<Resolution> supportedResolutions_;
+
 	Stream stream_;
 };
 
 class VirtualCameraConfiguration : public CameraConfiguration
 {
 public:
-	VirtualCameraConfiguration();
+	static constexpr unsigned int kBufferCount = 4; // 4~6
+
+	VirtualCameraConfiguration(VirtualCameraData *data);
 
 	Status validate() override;
+
+private:
+	const VirtualCameraData *data_;
 };
 
 class PipelineHandlerVirtual : public PipelineHandler
@@ -58,17 +71,56 @@ public:
 	bool match(DeviceEnumerator *enumerator) override;
 
 private:
+	VirtualCameraData *cameraData(Camera *camera)
+	{
+		return static_cast<VirtualCameraData *>(camera->_d());
+	}
+
 	std::shared_ptr<MediaDeviceVirtual> mediaDeviceVirtual_;
 };
 
-VirtualCameraConfiguration::VirtualCameraConfiguration()
-	: CameraConfiguration()
+VirtualCameraConfiguration::VirtualCameraConfiguration(VirtualCameraData *data)
+	: CameraConfiguration(), data_(data)
 {
 }
 
 CameraConfiguration::Status VirtualCameraConfiguration::validate()
 {
-	return Invalid;
+	Status status = Valid;
+
+	if (config_.empty()) {
+		LOG(VIRTUAL, Error) << "Empty config";
+		return Invalid;
+	}
+
+	// TODO: check if we should limit |config_.size()|
+
+	Size maxSize;
+	for (const auto &resolution : data_->supportedResolutions_)
+		maxSize = std::max(maxSize, resolution.size);
+
+	for (StreamConfiguration &cfg : config_) {
+		// TODO: check |cfg.pixelFormat|.
+
+		bool found = false;
+		for (const auto &resolution : data_->supportedResolutions_) {
+			if (resolution.size.width >= cfg.size.width && resolution.size.height >= cfg.size.height) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			cfg.size = maxSize;
+			status = Adjusted;
+		}
+
+		cfg.setStream(const_cast<Stream *>(&data_->stream_));
+
+		cfg.bufferCount = VirtualCameraConfiguration::kBufferCount;
+	}
+
+	return status;
 }
 
 PipelineHandlerVirtual::PipelineHandlerVirtual(CameraManager *manager)
@@ -79,16 +131,81 @@ PipelineHandlerVirtual::PipelineHandlerVirtual(CameraManager *manager)
 std::unique_ptr<CameraConfiguration> PipelineHandlerVirtual::generateConfiguration(Camera *camera,
 										   const StreamRoles &roles)
 {
-	(void)camera;
-	(void)roles;
-	return std::unique_ptr<VirtualCameraConfiguration>(nullptr);
+	VirtualCameraData *data = cameraData(camera);
+	auto config =
+		std::make_unique<VirtualCameraConfiguration>(data);
+
+	if (roles.empty())
+		return config;
+
+	Size minSize, sensorResolution;
+	for (const auto &resolution : data->supportedResolutions_) {
+		if (minSize.isNull() || minSize > resolution.size)
+			minSize = resolution.size;
+
+		sensorResolution = std::max(sensorResolution, resolution.size);
+	}
+
+	for (const StreamRole role : roles) {
+		std::map<PixelFormat, std::vector<SizeRange>> streamFormats;
+		unsigned int bufferCount;
+		PixelFormat pixelFormat;
+
+		switch (role) {
+		case StreamRole::StillCapture:
+			pixelFormat = formats::NV12;
+			bufferCount = VirtualCameraConfiguration::kBufferCount;
+			streamFormats[pixelFormat] = { { minSize, sensorResolution } };
+
+			break;
+
+		case StreamRole::Raw: {
+			// TODO: check
+			pixelFormat = formats::SBGGR10;
+			bufferCount = VirtualCameraConfiguration::kBufferCount;
+			streamFormats[pixelFormat] = { { minSize, sensorResolution } };
+
+			break;
+		}
+
+		case StreamRole::Viewfinder:
+		case StreamRole::VideoRecording: {
+			pixelFormat = formats::NV12;
+			bufferCount = VirtualCameraConfiguration::kBufferCount;
+			streamFormats[pixelFormat] = { { minSize, sensorResolution } };
+
+			break;
+		}
+
+		default:
+			LOG(VIRTUAL, Error)
+				<< "Requested stream role not supported: " << role;
+			config.reset();
+			return config;
+		}
+
+		StreamFormats formats(streamFormats);
+		StreamConfiguration cfg(formats);
+		cfg.size = sensorResolution;
+		cfg.pixelFormat = pixelFormat;
+		cfg.bufferCount = bufferCount;
+		config->addConfiguration(cfg);
+	}
+
+	if (config->validate() == CameraConfiguration::Invalid) {
+		config.reset();
+		return config;
+	}
+
+	return config;
 }
 
 int PipelineHandlerVirtual::configure(Camera *camera, CameraConfiguration *config)
 {
 	(void)camera;
 	(void)config;
-	return -1;
+	// Nothing to be done.
+	return 0;
 }
 
 int PipelineHandlerVirtual::exportFrameBuffers(Camera *camera, Stream *stream,
@@ -124,7 +241,14 @@ bool PipelineHandlerVirtual::match(DeviceEnumerator *enumerator)
 	(void)enumerator;
 	mediaDevices_.push_back(mediaDeviceVirtual_);
 
+	// TODO: Add virtual cameras according to a config file.
+
 	std::unique_ptr<VirtualCameraData> data = std::make_unique<VirtualCameraData>(this);
+
+	data->supportedResolutions_.resize(2);
+	data->supportedResolutions_[0] = { .size = Size(1920, 1080), .frame_rates = { 30 }, .formats = { "YCbCr_420_888" } };
+	data->supportedResolutions_[1] = { .size = Size(1280, 720), .frame_rates = { 30, 60 }, .formats = { "YCbCr_420_888" } };
+
 	/* Create and register the camera. */
 	std::set<Stream *> streams{ &data->stream_ };
 	const std::string id = "Virtual0";
