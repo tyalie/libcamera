@@ -34,6 +34,7 @@ libcamera_sources = files([
     'ipc_unixsocket.cpp',
     'mapped_framebuffer.cpp',
     'media_device.cpp',
+    'media_device_base.cpp',
     'media_object.cpp',
     'pipeline_handler.cpp',
     'pixel_format.cpp',
