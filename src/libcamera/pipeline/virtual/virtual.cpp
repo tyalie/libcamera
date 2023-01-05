@@ -8,6 +8,8 @@
 #include <libcamera/base/log.h>
 
 #include <libcamera/camera.h>
+#include <libcamera/control_ids.h>
+#include <libcamera/controls.h>
 #include <libcamera/formats.h>
 
 #include "libcamera/internal/camera.h"
@@ -17,6 +19,17 @@
 namespace libcamera {
 
 LOG_DEFINE_CATEGORY(VIRTUAL)
+
+uint64_t CurrentTimestamp()
+{
+	struct timespec ts;
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0) {
+		LOG(VIRTUAL, Error) << "Get clock time fails";
+		return 0;
+	}
+
+	return ts.tv_sec * 1'000'000'000LL + ts.tv_nsec;
+}
 
 class VirtualCameraData : public Camera::Private
 {
@@ -214,6 +227,7 @@ int PipelineHandlerVirtual::exportFrameBuffers(Camera *camera, Stream *stream,
 	(void)camera;
 	(void)stream;
 	(void)buffers;
+	// TODO: Use UDMA to allocate buffers.
 	return -1;
 }
 
@@ -221,19 +235,28 @@ int PipelineHandlerVirtual::start(Camera *camera, const ControlList *controls)
 {
 	(void)camera;
 	(void)controls;
-	return -1;
+	// TODO: Start reading the virtual video if any.
+	return 0;
 }
 
 void PipelineHandlerVirtual::stopDevice(Camera *camera)
 {
 	(void)camera;
+	// TODO: Reset the virtual video if any.
 }
 
 int PipelineHandlerVirtual::queueRequestDevice(Camera *camera, Request *request)
 {
 	(void)camera;
-	(void)request;
-	return -1;
+
+	// TODO: Read from the virtual video if any.
+	for (auto it : request->buffers())
+		completeBuffer(request, it.second);
+
+	request->metadata().set(controls::SensorTimestamp, CurrentTimestamp());
+	completeRequest(request);
+
+	return 0;
 }
 
 bool PipelineHandlerVirtual::match(DeviceEnumerator *enumerator)
