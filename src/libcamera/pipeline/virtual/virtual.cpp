@@ -9,12 +9,26 @@
 
 #include <libcamera/camera.h>
 
+#include "libcamera/internal/camera.h"
 #include "libcamera/internal/media_device_virtual.h"
 #include "libcamera/internal/pipeline_handler.h"
 
 namespace libcamera {
 
 LOG_DEFINE_CATEGORY(VIRTUAL)
+
+class VirtualCameraData : public Camera::Private
+{
+public:
+	VirtualCameraData(PipelineHandler *pipe)
+		: Camera::Private(pipe)
+	{
+	}
+
+	~VirtualCameraData() = default;
+
+	Stream stream_;
+};
 
 class VirtualCameraConfiguration : public CameraConfiguration
 {
@@ -109,6 +123,14 @@ bool PipelineHandlerVirtual::match(DeviceEnumerator *enumerator)
 {
 	(void)enumerator;
 	mediaDevices_.push_back(mediaDeviceVirtual_);
+
+	std::unique_ptr<VirtualCameraData> data = std::make_unique<VirtualCameraData>(this);
+	/* Create and register the camera. */
+	std::set<Stream *> streams{ &data->stream_ };
+	const std::string id = "Virtual0";
+	std::shared_ptr<Camera> camera = Camera::create(std::move(data), id, streams);
+	registerCamera(std::move(camera));
+
 	return false; // Prevent infinite loops for now
 }
 
