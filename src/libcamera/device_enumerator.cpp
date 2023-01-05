@@ -13,7 +13,7 @@
 
 #include "libcamera/internal/device_enumerator_sysfs.h"
 #include "libcamera/internal/device_enumerator_udev.h"
-#include "libcamera/internal/media_device.h"
+#include "libcamera/internal/media_device_base.h"
 
 /**
  * \file device_enumerator.h
@@ -25,12 +25,12 @@
  * At the core of the enumeration is the DeviceEnumerator class, responsible
  * for enumerating all media devices in the system. It handles all interactions
  * with the operating system in a platform-specific way. For each media device
- * found an instance of MediaDevice is created to store information about the
+ * found an instance of MediaDeviceBase is created to store information about the
  * device gathered from the kernel through the Media Controller API.
  *
  * The DeviceEnumerator can enumerate all or specific media devices in the
  * system. When a new media device is added the enumerator creates a
- * corresponding MediaDevice instance.
+ * corresponding MediaDeviceBase instance.
  *
  * The enumerator supports searching among enumerated devices based on criteria
  * expressed in a DeviceMatch object.
@@ -91,7 +91,7 @@ void DeviceMatch::add(const std::string &entity)
  *
  * \return true if the media device matches the search pattern, false otherwise
  */
-bool DeviceMatch::match(const MediaDevice *device) const
+bool DeviceMatch::match(const MediaDeviceBase *device) const
 {
 	if (driver_ != device->driver())
 		return false;
@@ -120,7 +120,7 @@ bool DeviceMatch::match(const MediaDevice *device) const
  * The DeviceEnumerator class is responsible for all interactions with the
  * operating system related to media devices. It enumerates all media devices
  * in the system, and for each device found creates an instance of the
- * MediaDevice class and stores it internally. The list of media devices can
+ * MediaDeviceBase class and stores it internally. The list of media devices can
  * then be searched using DeviceMatch search patterns.
  *
  * The enumerator also associates media device entities with device node paths.
@@ -161,7 +161,7 @@ std::unique_ptr<DeviceEnumerator> DeviceEnumerator::create()
 
 DeviceEnumerator::~DeviceEnumerator()
 {
-	for (const std::shared_ptr<MediaDevice> &media : devices_) {
+	for (const std::shared_ptr<MediaDeviceBase> &media : devices_) {
 		if (media->busy())
 			LOG(DeviceEnumerator, Error)
 				<< "Removing media device " << media->deviceNode()
@@ -209,9 +209,9 @@ DeviceEnumerator::~DeviceEnumerator()
  *
  * \return Created media device instance on success, or nullptr otherwise
  */
-std::unique_ptr<MediaDevice> DeviceEnumerator::createDevice(const std::string &deviceNode)
+std::unique_ptr<MediaDeviceBase> DeviceEnumerator::createDevice(const std::string &deviceNode)
 {
-	std::unique_ptr<MediaDevice> media = std::make_unique<MediaDevice>(deviceNode);
+	std::unique_ptr<MediaDeviceBase> media = std::make_unique<MediaDeviceBase>(deviceNode);
 
 	int ret = media->populate();
 	if (ret < 0) {
@@ -247,7 +247,7 @@ std::unique_ptr<MediaDevice> DeviceEnumerator::createDevice(const std::string &d
  * This function shall be called after all members of the entities of the
  * media graph have been confirmed to be initialized.
  */
-void DeviceEnumerator::addDevice(std::unique_ptr<MediaDevice> media)
+void DeviceEnumerator::addDevice(std::unique_ptr<MediaDeviceBase> media)
 {
 	LOG(DeviceEnumerator, Debug)
 		<< "Added device " << media->deviceNode() << ": " << media->driver();
@@ -263,12 +263,12 @@ void DeviceEnumerator::addDevice(std::unique_ptr<MediaDevice> media)
  * \param[in] deviceNode Path to the media device to remove
  *
  * Remove the media device identified by \a deviceNode previously added to the
- * enumerator with addDevice(). The media device's MediaDevice::disconnected
+ * enumerator with addDevice(). The media device's MediaDeviceBase::disconnected
  * signal is emitted.
  */
 void DeviceEnumerator::removeDevice(const std::string &deviceNode)
 {
-	std::shared_ptr<MediaDevice> media;
+	std::shared_ptr<MediaDeviceBase> media;
 
 	for (auto iter = devices_.begin(); iter != devices_.end(); ++iter) {
 		if ((*iter)->deviceNode() == deviceNode) {
@@ -297,14 +297,14 @@ void DeviceEnumerator::removeDevice(const std::string &deviceNode)
  *
  * Search in the enumerated media devices that are not already in use for a
  * match described in \a dm. If a match is found and the caller intends to use
- * it the caller is responsible for acquiring the MediaDevice object and
+ * it the caller is responsible for acquiring the MediaDeviceBase object and
  * releasing it when done with it.
  *
- * \return pointer to the matching MediaDevice, or nullptr if no match is found
+ * \return pointer to the matching MediaDeviceBase, or nullptr if no match is found
  */
-std::shared_ptr<MediaDevice> DeviceEnumerator::search(const DeviceMatch &dm)
+std::shared_ptr<MediaDeviceBase> DeviceEnumerator::search(const DeviceMatch &dm)
 {
-	for (std::shared_ptr<MediaDevice> &media : devices_) {
+	for (std::shared_ptr<MediaDeviceBase> &media : devices_) {
 		if (media->busy())
 			continue;
 

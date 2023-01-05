@@ -12,7 +12,7 @@
 
 #include "libcamera/internal/device_enumerator.h"
 
-class MediaDevice;
+class MediaDeviceBase;
 
 namespace libcamera {
 
@@ -23,7 +23,7 @@ public:
 	int enumerate();
 
 private:
-	int populateMediaDevice(MediaDevice *media);
+	int populateMediaDevice(MediaDeviceBase *media);
 	std::string lookupDeviceNode(int major, int minor);
 };
 

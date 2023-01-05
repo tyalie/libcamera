@@ -865,7 +865,7 @@ bool PipelineHandlerISI::match(DeviceEnumerator *enumerator)
 	dm.add("mxc_isi.0");
 	dm.add("mxc_isi.0.capture");
 
-	isiDev_ = acquireMediaDevice(enumerator, dm);
+	isiDev_ = dynamic_cast<MediaDevice *>(acquireMediaDevice(enumerator, dm));
 	if (!isiDev_)
 		return false;
 

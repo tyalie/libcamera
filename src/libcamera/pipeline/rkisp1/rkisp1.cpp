@@ -1152,7 +1152,7 @@ bool PipelineHandlerRkISP1::match(DeviceEnumerator *enumerator)
 	dm.add("rkisp1_stats");
 	dm.add("rkisp1_params");
 
-	media_ = acquireMediaDevice(enumerator, dm);
+	media_ = dynamic_cast<MediaDevice *>(acquireMediaDevice(enumerator, dm));
 	if (!media_)
 		return false;
 
