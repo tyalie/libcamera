@@ -35,6 +35,7 @@ libcamera_sources = files([
     'media_device.cpp',
     'media_device_base.cpp',
     'media_device_virtual.cpp',
+    'media_device_usb.cpp',
     'media_object.cpp',
     'pipeline_handler.cpp',
     'pixel_format.cpp',
