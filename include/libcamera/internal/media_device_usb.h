@@ -9,6 +9,8 @@
 
 #include "libcamera/internal/media_device_base.h"
 
+#include <libusb-1.0/libusb.h>
+
 namespace libcamera {
 
 class MediaDeviceUSB : public MediaDeviceBase
@@ -16,6 +18,17 @@ class MediaDeviceUSB : public MediaDeviceBase
 public:
 	MediaDeviceUSB(const std::string &deviceNode);
 	~MediaDeviceUSB();
+
+	int populate() override;
+
+private:
+	int open() override;
+	void close() override;
+
+	void clear() override;
+
+	UniqueFD fd_;
+	libusb_device_handle *usb_handle = NULL;
 };
 
 } // namespace libcamera
