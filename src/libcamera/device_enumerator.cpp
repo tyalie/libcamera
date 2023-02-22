@@ -14,6 +14,7 @@
 #include "libcamera/internal/device_enumerator_sysfs.h"
 #include "libcamera/internal/device_enumerator_udev.h"
 #include "libcamera/internal/media_device_base.h"
+#include "libcamera/internal/media_device.h"
 
 /**
  * \file device_enumerator.h
@@ -136,9 +137,10 @@ DeviceEnumerator::~DeviceEnumerator()
  *
  * \return Created media device instance on success, or nullptr otherwise
  */
+template<typename T>
 std::unique_ptr<MediaDeviceBase> DeviceEnumerator::createDevice(const std::string &deviceNode)
 {
-	std::unique_ptr<MediaDeviceBase> media = std::make_unique<MediaDeviceBase>(deviceNode);
+	std::unique_ptr<MediaDeviceBase> media = std::make_unique<T>(deviceNode);
 
 	int ret = media->populate();
 	if (ret < 0) {
@@ -154,6 +156,9 @@ std::unique_ptr<MediaDeviceBase> DeviceEnumerator::createDevice(const std::strin
 
 	return media;
 }
+
+template
+std::unique_ptr<MediaDeviceBase> DeviceEnumerator::createDevice<MediaDevice>(const std::string &);
 
 /**
 * \var DeviceEnumerator::devicesAdded
