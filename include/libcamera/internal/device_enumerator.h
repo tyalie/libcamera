@@ -47,6 +47,7 @@ public:
 	Signal<> devicesAdded;
 
 protected:
+	template<class T>
 	std::unique_ptr<MediaDeviceBase> createDevice(const std::string &deviceNode);
 	void removeDevice(const std::string &deviceNode);
 
