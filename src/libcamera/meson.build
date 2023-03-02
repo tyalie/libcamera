@@ -15,6 +15,7 @@ libcamera_sources = files([
     'control_validator.cpp',
     'converter.cpp',
     'delayed_controls.cpp',
+    'device_match.cpp',
     'device_enumerator.cpp',
     'device_enumerator_sysfs.cpp',
     'fence.cpp',

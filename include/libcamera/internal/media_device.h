@@ -19,6 +19,7 @@
 #include <libcamera/base/unique_fd.h>
 
 #include "libcamera/internal/media_object.h"
+#include "libcamera/internal/device_match.h"
 
 namespace libcamera {
 
