@@ -14,6 +14,8 @@
 
 #include <libcamera/base/class.h>
 
+#include "libcamera/internal/device_match.h"
+
 namespace libcamera {
 
 class MediaDevice;
@@ -85,7 +87,7 @@ private:
 	std::vector<MediaLink *> links_;
 };
 
-class MediaEntity : public MediaObject
+class MediaEntity : public MediaObject, public DeviceMatchEntityInterface
 {
 public:
 	enum class Type {
@@ -110,6 +112,9 @@ public:
 	const MediaPad *getPadById(unsigned int id) const;
 
 	int setDeviceNode(const std::string &deviceNode);
+
+	const std::string &match_key() const{ return DeviceMatchEntityInterface::MATCH_ALL_KEY; }
+	const std::string &match_value() const { return name_; }
 
 private:
 	LIBCAMERA_DISABLE_COPY_AND_MOVE(MediaEntity)

@@ -13,23 +13,11 @@
 
 #include <libcamera/base/signal.h>
 
+#include "libcamera/internal/device_match.h"
+
 namespace libcamera {
 
 class MediaDevice;
-
-class DeviceMatch
-{
-public:
-	DeviceMatch(const std::string &driver);
-
-	void add(const std::string &entity);
-
-	bool match(const MediaDevice *device) const;
-
-private:
-	std::string driver_;
-	std::vector<std::string> entities_;
-};
 
 class DeviceEnumerator
 {
