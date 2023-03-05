@@ -221,6 +221,10 @@ int DeviceEnumeratorSysfs::enumerateUSBBusDevices(std::string *busdir)
 		if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
 			continue;
 
+		// this assumes that the main bus devices are always enlisted as dev 001
+		if (!strcmp(ent->d_name, "001"))
+			continue;
+
 		if (ent->d_type != DT_CHR) {
 			LOG(DeviceEnumerator, Error)
 				<< "Invalid char device " << ent->d_name << " in " << busdir;
