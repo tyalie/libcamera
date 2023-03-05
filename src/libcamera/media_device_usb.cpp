@@ -53,7 +53,7 @@ int MediaDeviceUSB::open()
 		return -EBUSY;
 	}
 
-	fd_ = UniqueFD(::open(deviceNode_.c_str(), O_RDONLY));
+	fd_ = UniqueFD(::open(deviceNode_.c_str(), O_RDONLY | O_CLOEXEC));
 	if (!fd_.isValid()) {
 		ret = -errno;
 		LOG(MediaDeviceUSB, Error)
