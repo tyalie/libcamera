@@ -21,6 +21,7 @@
 #include <libcamera/base/log.h>
 
 #include "libcamera/internal/media_device.h"
+#include "libcamera/internal/media_device_usb.h"
 
 namespace libcamera {
 
@@ -62,6 +63,11 @@ int DeviceEnumeratorUdev::init()
 		return ret;
 
 	ret = udev_monitor_filter_add_match_subsystem_devtype(monitor_, "video4linux",
+							      nullptr);
+	if (ret < 0)
+		return ret;
+
+	ret = udev_monitor_filter_add_match_subsystem_devtype(monitor_, "usb",
 							      nullptr);
 	if (ret < 0)
 		return ret;
@@ -114,6 +120,37 @@ int DeviceEnumeratorUdev::addUdevDevice(struct udev_device *dev)
 		return 0;
 	}
 
+	if (!strcmp(subsystem, "usb")) {
+		// ignore devices with devnum 1 as they are bus roots
+		const char *devnum = udev_device_get_sysattr_value(dev, "devnum");
+		if (!strcmp(devnum, "1"))
+			return 0;
+
+		std::unique_ptr<MediaDeviceBase> media =
+			createDevice<MediaDeviceUSB>(udev_device_get_devnode(dev));
+		if (!media)
+			return -ENODEV;
+
+		DependencyMap deps;
+		int ret = populateMediaDevice(media.get(), &deps);
+		if (ret < 0) {
+			LOG(DeviceEnumerator, Warning)
+				<< "Failed to populate media device "
+				<< media->deviceNode()
+				<< " (" << media->driver() << "), skipping";
+			return ret;
+		}
+
+		if (!deps.empty()) {
+			LOG(DeviceEnumerator, Error)
+				<< "USB device needed defering. Unclear what it means";
+			return -ENODEV;
+		}
+
+		addDevice(std::move(media));
+		return 0;
+	}
+
 	return -ENODEV;
 }
 
@@ -135,6 +172,10 @@ int DeviceEnumeratorUdev::enumerate()
 	if (ret < 0)
 		goto done;
 
+	ret = udev_enumerate_add_match_subsystem(udev_enum, "usb");
+	if (ret < 0)
+		goto done;
+
 	ret = udev_enumerate_add_match_is_initialized(udev_enum);
 	if (ret < 0)
 		goto done;
@@ -150,6 +191,7 @@ int DeviceEnumeratorUdev::enumerate()
 	udev_list_entry_foreach(ent, ents) {
 		struct udev_device *dev;
 		const char *devnode;
+		const char *devtype;
 		const char *syspath = udev_list_entry_get_name(ent);
 
 		dev = udev_device_new_from_syspath(udev_, syspath);
@@ -157,6 +199,12 @@ int DeviceEnumeratorUdev::enumerate()
 			LOG(DeviceEnumerator, Warning)
 				<< "Failed to get device for '"
 				<< syspath << "', skipping";
+			continue;
+		}
+
+		devtype = udev_device_get_devtype(dev);
+		if (devtype && !strcmp(devtype, "usb_interface")) {
+			udev_device_unref(dev);
 			continue;
 		}
 
@@ -330,6 +378,13 @@ int DeviceEnumeratorUdev::addV4L2Device(dev_t devnum)
 void DeviceEnumeratorUdev::udevNotify()
 {
 	struct udev_device *dev = udev_monitor_receive_device(monitor_);
+
+	const char *devtype = udev_device_get_devtype(dev);
+	if (devtype && !strcmp(devtype, "usb_interface")) {
+		udev_device_unref(dev);
+		return;
+	}
+
 	std::string action(udev_device_get_action(dev));
 	std::string deviceNode(udev_device_get_devnode(dev));
 
@@ -340,7 +395,7 @@ void DeviceEnumeratorUdev::udevNotify()
 		addUdevDevice(dev);
 	} else if (action == "remove") {
 		const char *subsystem = udev_device_get_subsystem(dev);
-		if (subsystem && !strcmp(subsystem, "media"))
+		if (subsystem && (!strcmp(subsystem, "media") || !strcmp(subsystem, "usb")))
 			removeDevice(deviceNode);
 	}
 
