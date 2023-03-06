@@ -23,7 +23,7 @@ struct udev_monitor;
 namespace libcamera {
 
 class EventNotifier;
-class MediaDevice;
+class MediaDeviceBase;
 class MediaEntity;
 
 class DeviceEnumeratorUdev final : public DeviceEnumerator
@@ -39,7 +39,7 @@ private:
 	using DependencyMap = std::map<dev_t, std::list<MediaEntity *>>;
 
 	struct MediaDeviceDeps {
-		MediaDeviceDeps(std::unique_ptr<MediaDevice> media,
+		MediaDeviceDeps(std::unique_ptr<MediaDeviceBase> media,
 				DependencyMap deps)
 			: media_(std::move(media)), deps_(std::move(deps))
 		{
@@ -50,12 +50,12 @@ private:
 			return media_ == other.media_;
 		}
 
-		std::unique_ptr<MediaDevice> media_;
+		std::unique_ptr<MediaDeviceBase> media_;
 		DependencyMap deps_;
 	};
 
 	int addUdevDevice(struct udev_device *dev);
-	int populateMediaDevice(MediaDevice *media, DependencyMap *deps);
+	int populateMediaDevice(MediaDeviceBase *media, DependencyMap *deps);
 	std::string lookupDeviceNode(dev_t devnum);
 
 	int addV4L2Device(dev_t devnum);

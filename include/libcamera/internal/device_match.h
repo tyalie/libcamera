@@ -15,7 +15,7 @@
 
 namespace libcamera {
 
-class MediaDevice;
+class MediaDeviceBase;
 
 class DeviceMatchEntityInterface
 {
@@ -35,7 +35,7 @@ public:
 	void add(const std::string &entity);
 	void add(const std::string &key, const std::string &value);
 
-	bool match(const MediaDevice *device) const;
+	bool match(const MediaDeviceBase *device) const;
 
 private:
 	std::string driver_;

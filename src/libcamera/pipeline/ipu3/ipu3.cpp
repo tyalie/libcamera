@@ -870,11 +870,11 @@ bool PipelineHandlerIPU3::match(DeviceEnumerator *enumerator)
 	imgu_dm.add("ipu3-imgu 1 viewfinder");
 	imgu_dm.add("ipu3-imgu 1 3a stat");
 
-	cio2MediaDev_ = acquireMediaDevice(enumerator, cio2_dm);
+	cio2MediaDev_ = dynamic_cast<MediaDevice *>(acquireMediaDevice(enumerator, cio2_dm));
 	if (!cio2MediaDev_)
 		return false;
 
-	imguMediaDev_ = acquireMediaDevice(enumerator, imgu_dm);
+	imguMediaDev_ = dynamic_cast<MediaDevice *>(acquireMediaDevice(enumerator, imgu_dm));
 	if (!imguMediaDev_)
 		return false;
 

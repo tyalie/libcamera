@@ -1247,7 +1247,7 @@ int PipelineHandlerRPi::queueRequestDevice(Camera *camera, Request *request)
 bool PipelineHandlerRPi::match(DeviceEnumerator *enumerator)
 {
 	DeviceMatch unicam("unicam");
-	MediaDevice *unicamDevice = acquireMediaDevice(enumerator, unicam);
+	MediaDevice *unicamDevice = dynamic_cast<MediaDevice *>(acquireMediaDevice(enumerator, unicam));
 
 	if (!unicamDevice) {
 		LOG(RPI, Debug) << "Unable to acquire a Unicam instance";
@@ -1255,7 +1255,7 @@ bool PipelineHandlerRPi::match(DeviceEnumerator *enumerator)
 	}
 
 	DeviceMatch isp("bcm2835-isp");
-	MediaDevice *ispDevice = acquireMediaDevice(enumerator, isp);
+	MediaDevice *ispDevice = dynamic_cast<MediaDevice *>(acquireMediaDevice(enumerator, isp));
 
 	if (!ispDevice) {
 		LOG(RPI, Debug) << "Unable to acquire ISP instance";

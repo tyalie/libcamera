@@ -389,7 +389,7 @@ bool PipelineHandlerUVC::match(DeviceEnumerator *enumerator)
 	MediaDevice *media;
 	DeviceMatch dm("uvcvideo");
 
-	media = acquireMediaDevice(enumerator, dm);
+	media = dynamic_cast<MediaDevice *>(acquireMediaDevice(enumerator, dm));
 	if (!media)
 		return false;
 

@@ -454,7 +454,7 @@ bool PipelineHandlerVimc::match(DeviceEnumerator *enumerator)
 	dm.add("RGB/YUV Input");
 	dm.add("Scaler");
 
-	MediaDevice *media = acquireMediaDevice(enumerator, dm);
+	MediaDevice *media = dynamic_cast<MediaDevice *>(acquireMediaDevice(enumerator, dm));
 	if (!media)
 		return false;
 

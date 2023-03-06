@@ -100,7 +100,7 @@ void DeviceMatch::add(const std::string &key, const std::string &value)
  *
  * \return true if the media device matches the search pattern, false otherwise
  */
-bool DeviceMatch::match(const MediaDevice *device) const
+bool DeviceMatch::match(const MediaDeviceBase *device) const
 {
 	if (driver_ != device->driver())
 		return false;

@@ -17,7 +17,7 @@
 
 namespace libcamera {
 
-class MediaDevice;
+class MediaDeviceBase;
 
 class DeviceEnumerator
 {
@@ -29,17 +29,17 @@ public:
 	virtual int init() = 0;
 	virtual int enumerate() = 0;
 
-	std::shared_ptr<MediaDevice> search(const DeviceMatch &dm);
+	std::shared_ptr<MediaDeviceBase> search(const DeviceMatch &dm);
 
 	Signal<> devicesAdded;
 
 protected:
-	std::unique_ptr<MediaDevice> createDevice(const std::string &deviceNode);
-	void addDevice(std::unique_ptr<MediaDevice> media);
+	std::unique_ptr<MediaDeviceBase> createDevice(const std::string &deviceNode);
+	void addDevice(std::unique_ptr<MediaDeviceBase> media);
 	void removeDevice(const std::string &deviceNode);
 
 private:
-	std::vector<std::shared_ptr<MediaDevice>> devices_;
+	std::vector<std::shared_ptr<MediaDeviceBase>> devices_;
 };
 
 } /* namespace libcamera */

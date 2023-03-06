@@ -74,7 +74,7 @@ PipelineHandler::PipelineHandler(CameraManager *manager)
 
 PipelineHandler::~PipelineHandler()
 {
-	for (std::shared_ptr<MediaDevice> media : mediaDevices_)
+	for (std::shared_ptr<MediaDeviceBase> media : mediaDevices_)
 		media->release();
 }
 
@@ -127,10 +127,10 @@ PipelineHandler::~PipelineHandler()
  *
  * \return A pointer to the matching MediaDevice, or nullptr if no match is found
  */
-MediaDevice *PipelineHandler::acquireMediaDevice(DeviceEnumerator *enumerator,
-						 const DeviceMatch &dm)
+MediaDeviceBase *PipelineHandler::acquireMediaDevice(DeviceEnumerator *enumerator,
+						     const DeviceMatch &dm)
 {
-	std::shared_ptr<MediaDevice> media = enumerator->search(dm);
+	std::shared_ptr<MediaDeviceBase> media = enumerator->search(dm);
 	if (!media)
 		return nullptr;
 
@@ -171,7 +171,7 @@ bool PipelineHandler::acquire()
 		return true;
 	}
 
-	for (std::shared_ptr<MediaDevice> &media : mediaDevices_) {
+	for (std::shared_ptr<MediaDeviceBase> &media : mediaDevices_) {
 		if (!media->lock()) {
 			unlockMediaDevices();
 			return false;
@@ -224,7 +224,7 @@ void PipelineHandler::releaseDevice([[maybe_unused]] Camera *camera)
 
 void PipelineHandler::unlockMediaDevices()
 {
-	for (std::shared_ptr<MediaDevice> &media : mediaDevices_)
+	for (std::shared_ptr<MediaDeviceBase> &media : mediaDevices_)
 		media->unlock();
 }
 
@@ -613,7 +613,7 @@ void PipelineHandler::registerCamera(std::shared_ptr<Camera> camera)
 	 * to the camera.
 	 */
 	std::vector<dev_t> devnums;
-	for (const std::shared_ptr<MediaDevice> &media : mediaDevices_) {
+	for (const std::shared_ptr<MediaDeviceBase> &media : mediaDevices_) {
 		for (const MediaEntity *entity : media->entities()) {
 			if (entity->pads().size() == 1 &&
 			    (entity->pads()[0]->flags() & MEDIA_PAD_FL_SINK) &&
@@ -639,7 +639,7 @@ void PipelineHandler::registerCamera(std::shared_ptr<Camera> camera)
  * handler gets notified and automatically disconnects all the cameras it has
  * registered without requiring any manual intervention.
  */
-void PipelineHandler::hotplugMediaDevice(MediaDevice *media)
+void PipelineHandler::hotplugMediaDevice(MediaDeviceBase *media)
 {
 	media->disconnected.connect(this, [=]() { mediaDeviceDisconnected(media); });
 }
@@ -647,7 +647,7 @@ void PipelineHandler::hotplugMediaDevice(MediaDevice *media)
 /**
  * \brief Slot for the MediaDevice disconnected signal
  */
-void PipelineHandler::mediaDeviceDisconnected(MediaDevice *media)
+void PipelineHandler::mediaDeviceDisconnected(MediaDeviceBase *media)
 {
 	media->disconnected.disconnect(this);
 

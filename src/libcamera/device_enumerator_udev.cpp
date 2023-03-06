@@ -76,7 +76,7 @@ int DeviceEnumeratorUdev::addUdevDevice(struct udev_device *dev)
 		return -ENODEV;
 
 	if (!strcmp(subsystem, "media")) {
-		std::unique_ptr<MediaDevice> media =
+		std::unique_ptr<MediaDeviceBase> media =
 			createDevice(udev_device_get_devnode(dev));
 		if (!media)
 			return -ENODEV;
@@ -193,7 +193,7 @@ done:
 	return 0;
 }
 
-int DeviceEnumeratorUdev::populateMediaDevice(MediaDevice *media, DependencyMap *deps)
+int DeviceEnumeratorUdev::populateMediaDevice(MediaDeviceBase *media, DependencyMap *deps)
 {
 	std::set<dev_t> children;
 

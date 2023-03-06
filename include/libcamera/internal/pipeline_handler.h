@@ -30,7 +30,7 @@ class CameraManager;
 class DeviceEnumerator;
 class DeviceMatch;
 class FrameBuffer;
-class MediaDevice;
+class MediaDeviceBase;
 class PipelineHandler;
 class Request;
 
@@ -42,8 +42,8 @@ public:
 	virtual ~PipelineHandler();
 
 	virtual bool match(DeviceEnumerator *enumerator) = 0;
-	MediaDevice *acquireMediaDevice(DeviceEnumerator *enumerator,
-					const DeviceMatch &dm);
+	MediaDeviceBase *acquireMediaDevice(DeviceEnumerator *enumerator,
+					    const DeviceMatch &dm);
 
 	bool acquire();
 	void release(Camera *camera);
@@ -72,7 +72,7 @@ public:
 
 protected:
 	void registerCamera(std::shared_ptr<Camera> camera);
-	void hotplugMediaDevice(MediaDevice *media);
+	void hotplugMediaDevice(MediaDeviceBase *media);
 
 	virtual int queueRequestDevice(Camera *camera, Request *request) = 0;
 	virtual void stopDevice(Camera *camera) = 0;
@@ -84,13 +84,13 @@ protected:
 private:
 	void unlockMediaDevices();
 
-	void mediaDeviceDisconnected(MediaDevice *media);
+	void mediaDeviceDisconnected(MediaDeviceBase *media);
 	virtual void disconnect();
 
 	void doQueueRequest(Request *request);
 	void doQueueRequests();
 
-	std::vector<std::shared_ptr<MediaDevice>> mediaDevices_;
+	std::vector<std::shared_ptr<MediaDeviceBase>> mediaDevices_;
 	std::vector<std::weak_ptr<Camera>> cameras_;
 
 	std::queue<Request *> waitingRequests_;

@@ -73,7 +73,7 @@ int DeviceEnumeratorSysfs::enumerate()
 			continue;
 		}
 
-		std::unique_ptr<MediaDevice> media = createDevice(devnode);
+		std::unique_ptr<MediaDeviceBase> media = createDevice(devnode);
 		if (!media)
 			continue;
 
@@ -93,7 +93,7 @@ int DeviceEnumeratorSysfs::enumerate()
 	return 0;
 }
 
-int DeviceEnumeratorSysfs::populateMediaDevice(MediaDevice *media)
+int DeviceEnumeratorSysfs::populateMediaDevice(MediaDeviceBase *media)
 {
 	/* Associate entities to device node paths. */
 	for (MediaEntity *entity : media->entities()) {
