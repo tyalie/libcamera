@@ -115,6 +115,7 @@ private:
 	LIBCAMERA_DISABLE_COPY_AND_MOVE(MediaEntity)
 
 	friend class MediaDevice;
+	friend class MediaDeviceUSB;
 
 	MediaEntity(MediaDevice *dev, const struct media_v2_entity *entity,
 		    const struct media_v2_interface *iface);

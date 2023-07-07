@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <stdint.h>
 
+#include <linux/media.h>
 #include <libcamera/base/log.h>
 
 #include <libusb-1.0/libusb.h>
@@ -32,16 +33,40 @@ MediaDeviceUSB::~MediaDeviceUSB()
 int MediaDeviceUSB::populate()
 {
 	int ret;
+	libusb_device *dev;
+	struct libusb_device_descriptor desc;
+	MediaEntity *m_entity;
 
 	driver_ = "libusb";
 
+	// TODO: remove this hack
+	struct media_v2_entity entity = { 0 };
+	struct media_v2_interface iface = { 0 };
+
 	ret = open();
-	if (ret)
-		return ret;
 
+	if (ret) {
+		LOG(MediaDeviceUSB, Error) << "Couldn't populate USB device";
+		goto done;
+	}
+
+	dev = libusb_get_device(usb_handle);
+	ret = libusb_get_device_descriptor(dev, &desc);
+	if (ret) {
+		LOG(MediaDeviceUSB, Error) << "Couldn't open device descriptor";
+		ret = -EACCES;
+		goto done;
+	}
+
+	snprintf(entity.name, sizeof(entity.name), "%04x:%04x", desc.idVendor, desc.idProduct);
+
+	m_entity = new MediaEntity(nullptr, &entity, &iface);
+
+	entities_.push_back(m_entity);
+
+done:
 	close();
-
-	return 0;
+	return ret;
 }
 
 int MediaDeviceUSB::open()
@@ -75,8 +100,10 @@ int MediaDeviceUSB::open()
 
 void MediaDeviceUSB::close()
 {
-	libusb_close(usb_handle);
-	usb_handle = NULL;
+	if (usb_handle != nullptr) {
+		libusb_close(usb_handle);
+		usb_handle = nullptr;
+	}
 	fd_.reset();
 }
 
