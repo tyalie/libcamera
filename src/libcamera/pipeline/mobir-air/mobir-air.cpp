@@ -4,8 +4,12 @@
  *
  * mobir-air.cpp - Pipeline handler for MobirAir thermal camera
  */
-
 #include <libcamera/base/log.h>
+
+#include <libcamera/camera.h>
+#include <libcamera/formats.h>
+#include <libcamera/controls.h>
+#include <libcamera/control_ids.h>
 
 #include "libcamera/internal/camera.h"
 #include "libcamera/internal/device_enumerator.h"
@@ -15,6 +19,22 @@
 namespace libcamera {
 
 LOG_DEFINE_CATEGORY(MOBIR_AIR)
+
+class MobirAirCameraData : public Camera::Private
+{
+public:
+	MobirAirCameraData(PipelineHandler *pipe, MediaDeviceUSB *device)
+		: Camera::Private(pipe), device_(device)
+	{
+	}
+
+	int init();
+	void bufferReader(FrameBuffer *buffer);
+
+	MediaDeviceUSB *device_;
+	Stream stream_;
+	std::map<PixelFormat, std::vector<SizeRange>> formats_;
+};
 
 class MobirAirCameraConfiguration : public CameraConfiguration
 {
@@ -43,6 +63,13 @@ public:
 	int queueRequestDevice(Camera *camera, Request *request) override;
 
 	bool match(DeviceEnumerator *enumerator) override;
+
+private:
+	MobirAirCameraData *cameraData(Camera *camera)
+	{
+		return static_cast<MobirAirCameraData *>(camera->_d());
+	}
+
 };
 
 MobirAirCameraConfiguration::MobirAirCameraConfiguration()
@@ -52,7 +79,39 @@ MobirAirCameraConfiguration::MobirAirCameraConfiguration()
 
 CameraConfiguration::Status MobirAirCameraConfiguration::validate()
 {
-	return Invalid;
+	Status status = Valid;
+
+	if (config_.empty())
+		return Invalid;
+
+	if (config_.size() > 1) {
+		config_.resize(1);
+		status = Adjusted;
+	}
+
+	StreamConfiguration &cfg = config_[0];
+
+	const std::vector<PixelFormat> formats = cfg.formats().pixelformats();
+	auto iter = std::find(formats.begin(), formats.end(), cfg.pixelFormat);
+	if (iter == formats.end()) {
+		cfg.pixelFormat = formats.front();
+		LOG(MOBIR_AIR, Debug)
+			<< "Adjusted pixel format to " << cfg.pixelFormat.toString();
+		status = Adjusted;
+	}
+
+	const std::vector<Size> &formatSizes = cfg.formats().sizes(cfg.pixelFormat);
+	auto iter2 = std::find(formatSizes.begin(), formatSizes.end(), cfg.size);
+	if (iter2 == formatSizes.end()) {
+		cfg.size = formatSizes.front();
+		LOG(MOBIR_AIR, Debug)
+			<< "Adjusted size to " << cfg.size;
+		status = Adjusted;
+	}
+
+	cfg.bufferCount = 1;
+
+	return status;
 }
 
 PipelineHandlerMobirAir::PipelineHandlerMobirAir(CameraManager *manager)
@@ -64,7 +123,24 @@ std::unique_ptr<CameraConfiguration>
 PipelineHandlerMobirAir::generateConfiguration(Camera *camera,
 					       const StreamRoles &roles)
 {
-	return std::unique_ptr<MobirAirCameraConfiguration>{};
+	MobirAirCameraData *data = cameraData(camera);
+	std::unique_ptr<CameraConfiguration> config =
+		std::make_unique<MobirAirCameraConfiguration>();
+
+	if (roles.empty())
+		return config;
+
+	StreamFormats formats(data->formats_);
+	StreamConfiguration cfg(formats);
+
+	cfg.pixelFormat = formats.pixelformats().front();
+	cfg.size = formats.sizes(cfg.pixelFormat).back();
+	cfg.bufferCount = 4;
+
+	config->addConfiguration(cfg);
+	config->validate();
+
+	return config;
 }
 
 int PipelineHandlerMobirAir::configure(Camera *camera, CameraConfiguration *config)
@@ -85,6 +161,7 @@ int PipelineHandlerMobirAir::start(Camera *camera, [[maybe_unused]] const Contro
 
 void PipelineHandlerMobirAir::stopDevice(Camera *camera)
 {
+	LOG(MOBIR_AIR, Debug) << "Unregistering device";
 }
 
 int PipelineHandlerMobirAir::queueRequestDevice(Camera *camera, Request *request)
@@ -102,7 +179,38 @@ bool PipelineHandlerMobirAir::match(DeviceEnumerator *enumerator)
 	if (!media)
 		return false;
 
-	return false;
+	std::unique_ptr<MobirAirCameraData> data = std::make_unique<MobirAirCameraData>(this, media);
+
+	if (data->init())
+		return false;
+
+	/* Create and register camera */
+	std::string id = "test device";
+	std::set<Stream *> streams{ &data->stream_ };
+	std::shared_ptr<Camera> camera = Camera::create(std::move(data), id, streams);
+	registerCamera(std::move(camera));
+
+	// enable hotplug notification
+	hotplugMediaDevice(media);
+
+	return true;
+}
+
+
+int MobirAirCameraData::init()
+{
+	// initialize ctrl map
+	ControlInfoMap::Map ctrls;
+	// TODO
+	controlInfo_ = ControlInfoMap(std::move(ctrls), controls::controls);
+
+	// TODO: set properties
+
+	// TODO: improve formats read
+	formats_[PixelFormat::fromString("R16")]
+		.push_back(SizeRange({120, 90}));
+
+	return 0;
 }
 
 REGISTER_PIPELINE_HANDLER(PipelineHandlerMobirAir)
