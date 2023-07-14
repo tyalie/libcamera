@@ -24,16 +24,34 @@ class MobirAirCameraData : public Camera::Private
 {
 public:
 	MobirAirCameraData(PipelineHandler *pipe, MediaDeviceUSB *device)
-		: Camera::Private(pipe), device_(device)
+		: Camera::Private(pipe), device_(device), tmp_fd_(nullptr)
 	{
 	}
 
 	int init();
 	void bufferReader(FrameBuffer *buffer);
 
+	FILE *getFD();
+
+	size_t bufferSize()
+	{
+		return 120 * 90 * 2;
+	}
+
+	FILE *closeFD()
+	{
+		fclose(tmp_fd_);
+		tmp_fd_ = nullptr;
+	}
+
 	MediaDeviceUSB *device_;
 	Stream stream_;
 	std::map<PixelFormat, std::vector<SizeRange>> formats_;
+
+private:
+	FILE *initFD();
+
+	FILE *tmp_fd_;
 };
 
 class MobirAirCameraConfiguration : public CameraConfiguration
@@ -145,22 +163,52 @@ PipelineHandlerMobirAir::generateConfiguration(Camera *camera,
 
 int PipelineHandlerMobirAir::configure(Camera *camera, CameraConfiguration *config)
 {
-	return -1;
+	// TODO: do I need to configure something??
+	MobirAirCameraData *data = cameraData(camera);
+	StreamConfiguration &cfg = config->at(0);
+
+	cfg.setStream(&data->stream_);
+
+	return 0;
 }
 
 int PipelineHandlerMobirAir::exportFrameBuffers(Camera *camera, Stream *stream,
 						std::vector<std::unique_ptr<FrameBuffer>> *buffers)
 {
-	return -1;
+	MobirAirCameraData *data = cameraData(camera);
+	int count = stream->configuration().bufferCount;
+	assert(count == 1);
+
+	for (unsigned i = 0; i < count; ++i) {
+		FrameBuffer::Plane p{
+			.fd = SharedFD(fileno(data->getFD())),
+			.offset = 0,
+			.length = (int)data->bufferSize()
+		};
+		std::vector<FrameBuffer::Plane> ps{ p };
+
+		std::unique_ptr<FrameBuffer> buffer = std::make_unique<FrameBuffer>(ps);
+
+		buffers->push_back(std::move(buffer));
+	}
+
+	return 0;
 }
 
 int PipelineHandlerMobirAir::start(Camera *camera, [[maybe_unused]] const ControlList *controls)
 {
-	return -1;
+	MobirAirCameraData *data = cameraData(camera);
+
+	data->getFD();
+
+	return 0;
 }
 
 void PipelineHandlerMobirAir::stopDevice(Camera *camera)
 {
+	MobirAirCameraData *data = cameraData(camera);
+	data->closeFD();
+
 	LOG(MOBIR_AIR, Debug) << "Unregistering device";
 }
 
@@ -196,6 +244,25 @@ bool PipelineHandlerMobirAir::match(DeviceEnumerator *enumerator)
 	return true;
 }
 
+FILE *MobirAirCameraData::initFD()
+{
+	FILE *f = tmpfile();
+
+	for (size_t i = 0; i < bufferSize(); i++)
+		fputc(0, f);
+
+	rewind(f);
+
+	return f;
+}
+
+FILE *MobirAirCameraData::getFD()
+{
+	if (!tmp_fd_)
+		tmp_fd_ = initFD();
+
+	return tmp_fd_;
+}
 
 int MobirAirCameraData::init()
 {
