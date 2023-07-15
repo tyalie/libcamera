@@ -29,16 +29,16 @@ public:
 	}
 
 	int init();
-	void bufferReader(FrameBuffer *buffer);
+	void bufferReady(FrameBuffer *buffer);
 
 	FILE *getFD();
 
 	size_t bufferSize()
 	{
-		return 120 * 90 * 2;
+		return 120 * 90 * sizeof(uint16_t);
 	}
 
-	FILE *closeFD()
+	void closeFD()
 	{
 		fclose(tmp_fd_);
 		tmp_fd_ = nullptr;
@@ -128,6 +128,7 @@ CameraConfiguration::Status MobirAirCameraConfiguration::validate()
 	}
 
 	cfg.bufferCount = 1;
+	cfg.stride = cfg.size.width * uint16_t(2);
 
 	return status;
 }
@@ -179,7 +180,7 @@ int PipelineHandlerMobirAir::exportFrameBuffers(Camera *camera, Stream *stream,
 	int count = stream->configuration().bufferCount;
 	assert(count == 1);
 
-	for (unsigned i = 0; i < count; ++i) {
+	for (int i = 0; i < count; ++i) {
 		FrameBuffer::Plane p{
 			.fd = SharedFD(fileno(data->getFD())),
 			.offset = 0,
@@ -214,7 +215,33 @@ void PipelineHandlerMobirAir::stopDevice(Camera *camera)
 
 int PipelineHandlerMobirAir::queueRequestDevice(Camera *camera, Request *request)
 {
-	return -1;
+	MobirAirCameraData *data = cameraData(camera);
+	FrameBuffer *buffer = request->findBuffer(&data->stream_);
+	if (!buffer) {
+		LOG(MOBIR_AIR, Error)
+			<< "Attempt to queue request with invalid stream";
+		return -ENOENT;
+	}
+
+	FILE *fd = data->getFD();
+	rewind(fd);
+
+	uint16_t tbuffer[120 * 90] = { 0 };
+	int32_t dx, dy;
+	for (uint16_t x = 0; x < 90; x++) {
+		for (uint16_t y = 0; y < 120; y++) {
+			// (x*x + y*y - 10*10 == 0) ? 24000 : 0;
+			dx = (int16_t)x - 45;
+			dy = (int16_t)y - 60;
+			tbuffer[x * 120 + y] = (uint16_t)(128 - ((dx * dx + dy * dy - 30 * 30) / 20));
+		}
+	}
+	fwrite(reinterpret_cast<const char *>(tbuffer), 120 * 90, sizeof(uint16_t), fd);
+	fflush(fd);
+
+	data->bufferReady(buffer);
+
+	return 0;
 }
 
 bool PipelineHandlerMobirAir::match(DeviceEnumerator *enumerator)
@@ -262,6 +289,14 @@ FILE *MobirAirCameraData::getFD()
 		tmp_fd_ = initFD();
 
 	return tmp_fd_;
+}
+
+void MobirAirCameraData::bufferReady(FrameBuffer *buffer)
+{
+	Request *request = buffer->request();
+
+	pipe()->completeBuffer(request, buffer);
+	pipe()->completeRequest(request);
 }
 
 int MobirAirCameraData::init()
