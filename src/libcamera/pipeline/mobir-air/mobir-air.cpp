@@ -1,20 +1,21 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 /*
- * Copyright (C) 2023, Sophie Friedrich
+ * Copyright (C) 2023, Sophie 'Tyalie' Friedrich
  *
  * mobir-air.cpp - Pipeline handler for MobirAir thermal camera
  */
+#include <math.h>
+
 #include <libcamera/base/log.h>
 
 #include <libcamera/camera.h>
-#include <libcamera/formats.h>
-#include <libcamera/controls.h>
 #include <libcamera/control_ids.h>
+#include <libcamera/controls.h>
+#include <libcamera/formats.h>
 
 #include "libcamera/internal/camera.h"
 #include "libcamera/internal/device_enumerator.h"
-#include "libcamera/internal/media_device_usb.h"
-#include "libcamera/internal/pipeline_handler.h"
+#include "libcamera/internal/framebuffer.h"
 
 namespace libcamera {
 
@@ -127,7 +128,6 @@ CameraConfiguration::Status MobirAirCameraConfiguration::validate()
 		status = Adjusted;
 	}
 
-	cfg.bufferCount = 1;
 	cfg.stride = cfg.size.width * uint16_t(2);
 
 	return status;
@@ -178,13 +178,14 @@ int PipelineHandlerMobirAir::exportFrameBuffers(Camera *camera, Stream *stream,
 {
 	MobirAirCameraData *data = cameraData(camera);
 	int count = stream->configuration().bufferCount;
-	assert(count == 1);
+
+	LOG(MOBIR_AIR, Debug) << count << " buffer(s) requested";
 
 	for (int i = 0; i < count; ++i) {
 		FrameBuffer::Plane p{
 			.fd = SharedFD(fileno(data->getFD())),
 			.offset = 0,
-			.length = (int)data->bufferSize()
+			.length = (unsigned int)data->bufferSize()
 		};
 		std::vector<FrameBuffer::Plane> ps{ p };
 
@@ -223,21 +224,32 @@ int PipelineHandlerMobirAir::queueRequestDevice(Camera *camera, Request *request
 		return -ENOENT;
 	}
 
+	static int idx = 0;
+
 	FILE *fd = data->getFD();
 	rewind(fd);
 
 	uint16_t tbuffer[120 * 90] = { 0 };
 	int32_t dx, dy;
+	float radius;
 	for (uint16_t x = 0; x < 90; x++) {
 		for (uint16_t y = 0; y < 120; y++) {
 			// (x*x + y*y - 10*10 == 0) ? 24000 : 0;
 			dx = (int16_t)x - 45;
 			dy = (int16_t)y - 60;
-			tbuffer[x * 120 + y] = (uint16_t)(128 - ((dx * dx + dy * dy - 30 * 30) / 20));
+			radius = (sin(idx / 20.0) + 1) * 30.0;
+			tbuffer[x * 120 + y] = (uint16_t)(256 - ((dx * dx + dy * dy - radius * radius) / 20));
 		}
 	}
+	tbuffer[idx++ % (sizeof(tbuffer) / sizeof(uint16_t))] = 0;
 	fwrite(reinterpret_cast<const char *>(tbuffer), 120 * 90, sizeof(uint16_t), fd);
 	fflush(fd);
+
+	FrameMetadata &metadata = buffer->_d()->metadata();
+	metadata.status = FrameMetadata::FrameSuccess;
+	metadata.planes()[0].bytesused = sizeof(tbuffer);
+	metadata.sequence = idx;
+	metadata.timestamp = 0;
 
 	data->bufferReady(buffer);
 
