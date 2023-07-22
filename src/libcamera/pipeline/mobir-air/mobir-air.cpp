@@ -17,6 +17,8 @@
 #include "libcamera/internal/device_enumerator.h"
 #include "libcamera/internal/framebuffer.h"
 
+#include "mobir-usb.h"
+
 namespace libcamera {
 
 LOG_DEFINE_CATEGORY(MOBIR_AIR)
@@ -27,6 +29,7 @@ public:
 	MobirAirCameraData(PipelineHandler *pipe, MediaDeviceUSB *device)
 		: Camera::Private(pipe), device_(device), tmp_fd_(nullptr)
 	{
+		usb_wrapper = std::make_unique<MobirAirUSBWrapper>(device_);
 	}
 
 	int init();
@@ -46,6 +49,7 @@ public:
 	}
 
 	MediaDeviceUSB *device_;
+	std::unique_ptr<MobirAirUSBWrapper> usb_wrapper;
 	Stream stream_;
 	std::map<PixelFormat, std::vector<SizeRange>> formats_;
 
@@ -313,6 +317,13 @@ void MobirAirCameraData::bufferReady(FrameBuffer *buffer)
 
 int MobirAirCameraData::init()
 {
+	// open device
+	int ret = usb_wrapper->open();
+	if (ret) {
+		LOG(MOBIR_AIR, Error) << "Couldn't open device (errno: " << ret << ")";
+		return ret;
+	}
+
 	// initialize ctrl map
 	ControlInfoMap::Map ctrls;
 	// TODO

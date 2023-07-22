@@ -21,7 +21,14 @@ public:
 
 	int populate() override;
 
+	libusb_device_handle *getUSBHandle()
+	{
+		return usb_handle;
+	}
+
 private:
+	int open(int flag);
+
 	int open() override;
 	void close() override;
 

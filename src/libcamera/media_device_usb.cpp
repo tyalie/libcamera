@@ -27,6 +27,7 @@ MediaDeviceUSB::MediaDeviceUSB(const std::string &deviceNode)
 
 MediaDeviceUSB::~MediaDeviceUSB()
 {
+	MediaDeviceUSB::close();
 	fd_.reset();
 }
 
@@ -43,7 +44,7 @@ int MediaDeviceUSB::populate()
 	struct media_v2_entity entity = { 0 };
 	struct media_v2_interface iface = { 0 };
 
-	ret = open();
+	ret = open(O_RDONLY);
 
 	if (ret) {
 		LOG(MediaDeviceUSB, Error) << "Couldn't populate USB device";
@@ -71,6 +72,11 @@ done:
 
 int MediaDeviceUSB::open()
 {
+	return MediaDeviceUSB::open(O_RDWR);
+}
+
+int MediaDeviceUSB::open(int flag)
+{
 	int ret;
 
 	if (fd_.isValid()) {
@@ -78,7 +84,7 @@ int MediaDeviceUSB::open()
 		return -EBUSY;
 	}
 
-	fd_ = UniqueFD(::open(deviceNode_.c_str(), O_RDONLY | O_CLOEXEC));
+	fd_ = UniqueFD(::open(deviceNode_.c_str(), flag | O_CLOEXEC));
 	if (!fd_.isValid()) {
 		ret = -errno;
 		LOG(MediaDeviceUSB, Error)
