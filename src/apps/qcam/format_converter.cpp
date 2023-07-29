@@ -77,6 +77,7 @@ int FormatConverter::configure(const libcamera::PixelFormat &format,
 		g_pos_ = 0;
 		b_pos_ = 0;
 		bpp_ = 1;
+		bpc_ = 1;
 		break;
 	case libcamera::formats::R16:
 		formatFamily_ = RGB;
@@ -84,6 +85,7 @@ int FormatConverter::configure(const libcamera::PixelFormat &format,
 		g_pos_ = 0;
 		b_pos_ = 0;
 		bpp_ = 2;
+		bpc_ = 2;
 		break;
 	case libcamera::formats::RGB888:
 		formatFamily_ = RGB;
@@ -91,6 +93,7 @@ int FormatConverter::configure(const libcamera::PixelFormat &format,
 		g_pos_ = 1;
 		b_pos_ = 0;
 		bpp_ = 3;
+		bpc_ = 1;
 		break;
 	case libcamera::formats::BGR888:
 		formatFamily_ = RGB;
@@ -98,6 +101,7 @@ int FormatConverter::configure(const libcamera::PixelFormat &format,
 		g_pos_ = 1;
 		b_pos_ = 2;
 		bpp_ = 3;
+		bpc_ = 1;
 		break;
 	case libcamera::formats::ARGB8888:
 	case libcamera::formats::XRGB8888:
@@ -106,6 +110,7 @@ int FormatConverter::configure(const libcamera::PixelFormat &format,
 		g_pos_ = 1;
 		b_pos_ = 0;
 		bpp_ = 4;
+		bpc_ = 1;
 		break;
 	case libcamera::formats::RGBA8888:
 	case libcamera::formats::RGBX8888:
@@ -114,6 +119,7 @@ int FormatConverter::configure(const libcamera::PixelFormat &format,
 		g_pos_ = 2;
 		b_pos_ = 1;
 		bpp_ = 4;
+		bpc_ = 1;
 		break;
 	case libcamera::formats::ABGR8888:
 	case libcamera::formats::XBGR8888:
@@ -122,6 +128,7 @@ int FormatConverter::configure(const libcamera::PixelFormat &format,
 		g_pos_ = 1;
 		b_pos_ = 2;
 		bpp_ = 4;
+		bpc_ = 1;
 		break;
 	case libcamera::formats::BGRA8888:
 	case libcamera::formats::BGRX8888:
@@ -130,6 +137,7 @@ int FormatConverter::configure(const libcamera::PixelFormat &format,
 		g_pos_ = 2;
 		b_pos_ = 3;
 		bpp_ = 4;
+		bpc_ = 1;
 		break;
 
 	case libcamera::formats::VYUY:
@@ -227,9 +235,9 @@ void FormatConverter::convertRGB(const Image *srcImage, unsigned char *dst)
 
 	for (y = 0; y < height_; y++) {
 		for (x = 0; x < width_; x++) {
-			r = src[bpp_ * x + r_pos_];
-			g = src[bpp_ * x + g_pos_];
-			b = src[bpp_ * x + b_pos_];
+			r = src[bpp_ * x + r_pos_ + (bpc_ - 1)];
+			g = src[bpp_ * x + g_pos_ + (bpc_ - 1)];
+			b = src[bpp_ * x + b_pos_ + (bpc_ - 1)];
 
 			dst[4 * x + 0] = b;
 			dst[4 * x + 1] = g;

@@ -52,6 +52,7 @@ private:
 
 	/* RGB parameters */
 	unsigned int bpp_;
+	unsigned int bpc_;
 	unsigned int r_pos_;
 	unsigned int g_pos_;
 	unsigned int b_pos_;
