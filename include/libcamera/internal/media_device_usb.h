@@ -26,6 +26,11 @@ public:
 		return usb_handle;
 	}
 
+	libusb_device *getUSBDevice()
+	{
+		return libusb_get_device(usb_handle);
+	}
+
 private:
 	int open(int flag);
 
@@ -35,7 +40,7 @@ private:
 	void clear() override;
 
 	UniqueFD fd_;
-	libusb_device_handle *usb_handle = NULL;
+	libusb_device_handle *usb_handle = nullptr;
 };
 
 } // namespace libcamera

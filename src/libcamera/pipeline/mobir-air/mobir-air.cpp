@@ -17,7 +17,7 @@
 #include "libcamera/internal/device_enumerator.h"
 #include "libcamera/internal/framebuffer.h"
 
-#include "mobir-usb.h"
+#include "mobir-manager.h"
 
 namespace libcamera {
 
@@ -29,7 +29,7 @@ public:
 	MobirAirCameraData(PipelineHandler *pipe, MediaDeviceUSB *device)
 		: Camera::Private(pipe), device_(device), tmp_fd_(nullptr)
 	{
-		usb_wrapper = std::make_unique<MobirAirUSBWrapper>(device_);
+		manager = std::make_unique<MobirCameraManager>(device_);
 	}
 
 	int init();
@@ -42,6 +42,11 @@ public:
 		return 120 * 90 * sizeof(uint16_t);
 	}
 
+	size_t headerSize()
+	{
+		return 120 * 3 * sizeof(uint16_t);
+	}
+
 	void closeFD()
 	{
 		fclose(tmp_fd_);
@@ -49,7 +54,7 @@ public:
 	}
 
 	MediaDeviceUSB *device_;
-	std::unique_ptr<MobirAirUSBWrapper> usb_wrapper;
+	std::unique_ptr<MobirCameraManager> manager;
 	Stream stream_;
 	std::map<PixelFormat, std::vector<SizeRange>> formats_;
 
@@ -172,6 +177,13 @@ int PipelineHandlerMobirAir::configure(Camera *camera, CameraConfiguration *conf
 	MobirAirCameraData *data = cameraData(camera);
 	StreamConfiguration &cfg = config->at(0);
 
+	// open device
+	int ret = data->manager->init();
+	if (ret) {
+		LOG(MOBIR_AIR, Error) << "Couldn't init device (errno: " << ret << ")";
+		return ret;
+	}
+
 	cfg.setStream(&data->stream_);
 
 	return 0;
@@ -233,25 +245,21 @@ int PipelineHandlerMobirAir::queueRequestDevice(Camera *camera, Request *request
 	FILE *fd = data->getFD();
 	rewind(fd);
 
-	uint16_t tbuffer[120 * 90] = { 0 };
-	int32_t dx, dy;
-	float radius;
-	for (uint16_t x = 0; x < 90; x++) {
-		for (uint16_t y = 0; y < 120; y++) {
-			// (x*x + y*y - 10*10 == 0) ? 24000 : 0;
-			dx = (int16_t)x - 45;
-			dy = (int16_t)y - 60;
-			radius = (sin(idx / 20.0) + 1) * 30.0;
-			tbuffer[x * 120 + y] = (uint16_t)(256 - ((dx * dx + dy * dy - radius * radius) / 20));
-		}
-	}
-	tbuffer[idx++ % (sizeof(tbuffer) / sizeof(uint16_t))] = 0;
-	fwrite(reinterpret_cast<const char *>(tbuffer), 120 * 90, sizeof(uint16_t), fd);
+	MobirAirUSBWrapper::Request req;
+	req.expected_length = data->bufferSize() + data->headerSize();
+	data->manager->_usb->doRequest(&req);
+
+	req.output[(idx++ * 2) % (data->bufferSize()) + 1 + data->headerSize()] = 255;
+
+	fwrite(
+		reinterpret_cast<const char *>(req.output.data()) + data->headerSize(),
+		120 * 90, sizeof(uint16_t), fd);
+
 	fflush(fd);
 
 	FrameMetadata &metadata = buffer->_d()->metadata();
 	metadata.status = FrameMetadata::FrameSuccess;
-	metadata.planes()[0].bytesused = sizeof(tbuffer);
+	metadata.planes()[0].bytesused = data->bufferSize();
 	metadata.sequence = idx;
 	metadata.timestamp = 0;
 
@@ -317,12 +325,6 @@ void MobirAirCameraData::bufferReady(FrameBuffer *buffer)
 
 int MobirAirCameraData::init()
 {
-	// open device
-	int ret = usb_wrapper->open();
-	if (ret) {
-		LOG(MOBIR_AIR, Error) << "Couldn't open device (errno: " << ret << ")";
-		return ret;
-	}
 
 	// initialize ctrl map
 	ControlInfoMap::Map ctrls;

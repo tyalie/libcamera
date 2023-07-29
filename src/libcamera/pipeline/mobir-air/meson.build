@@ -2,5 +2,6 @@
 
 libcamera_sources += files([
     'mobir-air.cpp',
-    'mobir-usb.cpp'
+    'mobir-usb.cpp',
+    'mobir-manager.cpp'
 ])

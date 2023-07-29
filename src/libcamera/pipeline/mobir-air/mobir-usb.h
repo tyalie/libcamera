@@ -38,6 +38,11 @@ public:
 
 		enum RequestStatus status;
 
+		void setInput(std::string &str)
+		{
+			input = std::vector<unsigned char>(str.begin(), str.end());
+		}
+
 	private:
 		ConditionVariable lock_;
 		Mutex mutex_;
@@ -65,8 +70,8 @@ private:
 
 	void sendRequest(Request *r);
 
-	libusb_device_handle *handle() { return media_device->getUSBHandle(); }
-	libusb_device *device() { return libusb_get_device(handle()); }
+	inline libusb_device_handle *handle() { return media_device->getUSBHandle(); }
+	inline libusb_device *device() { return media_device->getUSBDevice(); }
 
 	MediaDeviceUSB *media_device;
 

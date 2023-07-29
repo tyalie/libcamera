@@ -54,18 +54,6 @@ int MobirAirUSBWrapper::open()
 
 	Thread::start();
 
-	LOG(MOBIR_AIR, Debug) << "trying request";
-	request.expected_length = 1;
-
-	for (const char &c : "GetArmParam=\xea\x01\x00\x00\x01\x00")
-		request.input.push_back(c);
-	request.input.pop_back();
-
-	LOG(MOBIR_AIR, Debug) << "sending:" << request.input.size();
-
-	doRequest(&request);
-	LOG(MOBIR_AIR, Debug) << "completed request";
-
 close:
 	if (config != nullptr)
 		libusb_free_config_descriptor(config);
@@ -131,33 +119,44 @@ void MobirAirUSBWrapper::sendRequest(Request *r)
 	int ret;
 	int transferred;
 
-	r->mutex_.lock();
+	MutexLocker lock(r->mutex_);
 
-	ret = libusb_bulk_transfer(
-		handle(), 0x1, r->input.data(),
-		r->input.size(), &transferred, 0);
+	if (r->input.size() > 0) {
+		LOG(MOBIR_AIR, Debug) << "sending out with length: " << r->input.size();
+		ret = libusb_bulk_transfer(
+			handle(), 0x1, r->input.data(),
+			r->input.size(), &transferred, 0);
 
-	if (transferred != r->input.size() || ret) {
-		LOG(MOBIR_AIR, Debug) << "expected data send and actual send mismatch " << ret;
-		r->status = USB_REQUEST_ERROR;
-		goto unlock;
+		if (transferred != r->input.size() || ret) {
+			LOG(MOBIR_AIR, Debug) << "expected data send and actual send mismatch " << ret;
+			r->status = USB_REQUEST_ERROR;
+			return;
+		}
 	}
 
-	r->output.resize(r->expected_length);
-	ret = libusb_bulk_transfer(
-		handle(), 0x81, r->output.data(),
-		r->expected_length, &transferred, 300);
+	if (r->expected_length > 0) {
+		r->output = std::vector<unsigned char>();
+		r->output.resize(r->expected_length);
 
-	if (transferred != r->expected_length || ret) {
-		LOG(MOBIR_AIR, Debug) << "expected data recv and actual recv mismatch " << ret;
-		r->status = USB_REQUEST_ERROR;
-		goto unlock;
+		int cum_transferred = 0;
+		do {
+			auto _d = std::min((size_t)64 * 64 * 2, r->expected_length - cum_transferred);
+
+			ret = libusb_bulk_transfer(
+				handle(), 0x81, r->output.data() + cum_transferred,
+				_d, &transferred, 300);
+			cum_transferred += transferred;
+		} while (!ret && cum_transferred < r->expected_length);
+
+		if (cum_transferred == r->expected_length || ret) {
+			LOG(MOBIR_AIR, Debug) << "expected data recv and actual recv mismatch " << libusb_error_name(ret) << " (" << cum_transferred << " / " << r->expected_length << ")";
+			r->status = USB_REQUEST_ERROR;
+			return;
+		}
 	}
 
 	r->status = USB_REQUEST_COMPLETE;
 
-unlock:
-	r->mutex_.unlock();
 }
 
 void MobirAirUSBWrapper::run()
