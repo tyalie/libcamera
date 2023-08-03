@@ -27,7 +27,7 @@ class MobirAirCameraData : public Camera::Private
 {
 public:
 	MobirAirCameraData(PipelineHandler *pipe, MediaDeviceUSB *device)
-		: Camera::Private(pipe), device_(device), tmp_fd_(nullptr)
+		: Camera::Private(pipe), device_(device)
 	{
 		manager = std::make_unique<MobirCameraManager>(device_);
 	}
@@ -35,7 +35,6 @@ public:
 	int init();
 	void bufferReady(FrameBuffer *buffer);
 
-	FILE *getFD();
 
 	size_t bufferSize()
 	{
@@ -47,21 +46,12 @@ public:
 		return 120 * 3 * sizeof(uint16_t);
 	}
 
-	void closeFD()
-	{
-		fclose(tmp_fd_);
-		tmp_fd_ = nullptr;
-	}
+	FILE *initFD();
 
 	MediaDeviceUSB *device_;
 	std::unique_ptr<MobirCameraManager> manager;
 	Stream stream_;
 	std::map<PixelFormat, std::vector<SizeRange>> formats_;
-
-private:
-	FILE *initFD();
-
-	FILE *tmp_fd_;
 };
 
 class MobirAirCameraConfiguration : public CameraConfiguration
@@ -199,7 +189,7 @@ int PipelineHandlerMobirAir::exportFrameBuffers(Camera *camera, Stream *stream,
 
 	for (int i = 0; i < count; ++i) {
 		FrameBuffer::Plane p{
-			.fd = SharedFD(fileno(data->getFD())),
+			.fd = SharedFD(fileno(data->initFD())),
 			.offset = 0,
 			.length = (unsigned int)data->bufferSize()
 		};
@@ -215,17 +205,12 @@ int PipelineHandlerMobirAir::exportFrameBuffers(Camera *camera, Stream *stream,
 
 int PipelineHandlerMobirAir::start(Camera *camera, [[maybe_unused]] const ControlList *controls)
 {
-	MobirAirCameraData *data = cameraData(camera);
-
-	data->getFD();
-
 	return 0;
 }
 
 void PipelineHandlerMobirAir::stopDevice(Camera *camera)
 {
 	MobirAirCameraData *data = cameraData(camera);
-	data->closeFD();
 
 	LOG(MOBIR_AIR, Debug) << "Unregistering device";
 }
@@ -242,7 +227,7 @@ int PipelineHandlerMobirAir::queueRequestDevice(Camera *camera, Request *request
 
 	static int idx = 0;
 
-	FILE *fd = data->getFD();
+	FILE *fd = fdopen(buffer->planes()[0].fd.get(), "w");
 	rewind(fd);
 
 	MobirAirUSBWrapper::Request req;
@@ -299,20 +284,15 @@ FILE *MobirAirCameraData::initFD()
 {
 	FILE *f = tmpfile();
 
+	if (!f)
+		return 0;
+
 	for (size_t i = 0; i < bufferSize(); i++)
 		fputc(0, f);
 
 	rewind(f);
 
 	return f;
-}
-
-FILE *MobirAirCameraData::getFD()
-{
-	if (!tmp_fd_)
-		tmp_fd_ = initFD();
-
-	return tmp_fd_;
 }
 
 void MobirAirCameraData::bufferReady(FrameBuffer *buffer)
