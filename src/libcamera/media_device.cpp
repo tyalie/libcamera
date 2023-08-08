@@ -63,7 +63,7 @@ LOG_DEFINE_CATEGORY(MediaDevice)
  * populate() before the media graph can be queried.
  */
 MediaDevice::MediaDevice(const std::string &deviceNode)
-	: deviceNode_(deviceNode), valid_(false), acquired_(false)
+	: CameraDevice(), deviceNode_(deviceNode), valid_(false)
 {
 }
 

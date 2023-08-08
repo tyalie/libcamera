@@ -18,22 +18,22 @@
 #include <libcamera/base/signal.h>
 #include <libcamera/base/unique_fd.h>
 
+#include "libcamera/internal/camera_device.h"
 #include "libcamera/internal/media_object.h"
 
 namespace libcamera {
 
-class MediaDevice : protected Loggable
+class MediaDevice : protected Loggable, public CameraDevice
 {
 public:
 	MediaDevice(const std::string &deviceNode);
 	~MediaDevice();
 
-	bool acquire();
-	void release();
-	bool busy() const { return acquired_; }
+	bool acquire() override;
+	void release() override;
 
-	bool lock();
-	void unlock();
+	bool lock() override;
+	void unlock() override;
 
 	int populate();
 	bool isValid() const { return valid_; }
@@ -85,7 +85,6 @@ private:
 
 	UniqueFD fd_;
 	bool valid_;
-	bool acquired_;
 
 	std::map<unsigned int, MediaObject *> objects_;
 	std::vector<MediaEntity *> entities_;
