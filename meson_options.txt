@@ -46,6 +46,7 @@ option('pipelines',
             'rkisp1',
             'rpi/vc4',
             'simple',
+            'usb-test',
             'uvcvideo',
             'vimc'
         ],
