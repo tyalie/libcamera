@@ -271,4 +271,18 @@ std::shared_ptr<MediaDevice> DeviceEnumerator::search(const MediaDeviceMatch &dm
 	return nullptr;
 }
 
+std::shared_ptr<USBDevice> DeviceEnumerator::search(const USBDeviceMatch &dm)
+{
+	for (std::shared_ptr<USBDevice> &usb : usbDevices_) {
+		if (dm.match(usb.get())) {
+			LOG(DeviceEnumerator, Debug)
+				<< "Successful match for USB device "
+				<< usb->vid() << "-" << usb->pid();
+			return usb;
+		}
+	}
+
+	return nullptr;
+}
+
 } /* namespace libcamera */

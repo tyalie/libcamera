@@ -31,6 +31,7 @@ public:
 	virtual int enumerate() = 0;
 
 	std::shared_ptr<MediaDevice> search(const MediaDeviceMatch &dm);
+	std::shared_ptr<USBDevice> search(const USBDeviceMatch &dm);
 
 	Signal<> devicesAdded;
 
