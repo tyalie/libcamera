@@ -26,6 +26,7 @@ namespace libcamera {
 
 class Camera;
 class CameraConfiguration;
+class CameraDevice;
 class CameraManager;
 class DeviceEnumerator;
 class MediaDeviceMatch;
@@ -33,6 +34,8 @@ class FrameBuffer;
 class MediaDevice;
 class PipelineHandler;
 class Request;
+class USBDevice;
+class USBDeviceMatch;
 
 class PipelineHandler : public std::enable_shared_from_this<PipelineHandler>,
 			public Object
@@ -44,6 +47,8 @@ public:
 	virtual bool match(DeviceEnumerator *enumerator) = 0;
 	MediaDevice *acquireMediaDevice(DeviceEnumerator *enumerator,
 					const MediaDeviceMatch &dm);
+	USBDevice *acquireUSBDevice(DeviceEnumerator *enumerator,
+				    const USBDeviceMatch &dm);
 
 	bool acquire();
 	void release(Camera *camera);
@@ -82,7 +87,7 @@ protected:
 	CameraManager *manager_;
 
 private:
-	void unlockMediaDevices();
+	void unlockCameraDevices();
 
 	void mediaDeviceDisconnected(MediaDevice *media);
 	virtual void disconnect();
@@ -90,7 +95,7 @@ private:
 	void doQueueRequest(Request *request);
 	void doQueueRequests();
 
-	std::vector<std::shared_ptr<MediaDevice>> mediaDevices_;
+	std::vector<std::shared_ptr<CameraDevice>> cameraDevices_;
 	std::vector<std::weak_ptr<Camera>> cameras_;
 
 	std::queue<Request *> waitingRequests_;

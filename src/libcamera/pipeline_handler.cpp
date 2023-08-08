@@ -27,6 +27,7 @@
 #include "libcamera/internal/media_device.h"
 #include "libcamera/internal/request.h"
 #include "libcamera/internal/tracepoints.h"
+#include "libcamera/internal/usb_device.h"
 
 /**
  * \file pipeline_handler.h
@@ -76,8 +77,8 @@ PipelineHandler::PipelineHandler(CameraManager *manager)
 
 PipelineHandler::~PipelineHandler()
 {
-	for (std::shared_ptr<MediaDevice> media : mediaDevices_)
-		media->release();
+	for (std::shared_ptr<CameraDevice> device : cameraDevices_)
+		device->release();
 }
 
 /**
@@ -139,9 +140,40 @@ MediaDevice *PipelineHandler::acquireMediaDevice(DeviceEnumerator *enumerator,
 	if (!media->acquire())
 		return nullptr;
 
-	mediaDevices_.push_back(media);
+	cameraDevices_.push_back(media);
 
 	return media.get();
+}
+
+/**
+ * \brief Search and acquire a USBDevice matching a device pattern
+ * \param[in] enumerator Enumerator containing all media devices in the system
+ * \param[in] dm Device match pattern
+ *
+ * Search the device \a enumerator for an available USB device matching the
+ * device match pattern \a dm. Matching devices that have previously been
+ * acquired by MediaDevice::acquire() are not considered. If a match is found,
+ * the USB device is acquired and returned. The caller shall not release the
+ * device explicitly, it will be automatically released when the pipeline
+ * handler is destroyed.
+ *
+ * \context This function shall be called from the CameraManager thread.
+ *
+ * \return A pointer to the matching USBDevice, or nullptr if no match is found
+ */
+USBDevice *PipelineHandler::acquireUSBDevice(DeviceEnumerator *enumerator,
+					     const USBDeviceMatch &dm)
+{
+	std::shared_ptr<USBDevice> usb = enumerator->search(dm);
+	if (!usb)
+		return nullptr;
+
+	if (!usb->acquire())
+		return nullptr;
+
+	cameraDevices_.push_back(usb);
+
+	return usb.get();
 }
 
 /**
@@ -173,9 +205,9 @@ bool PipelineHandler::acquire()
 		return true;
 	}
 
-	for (std::shared_ptr<MediaDevice> &media : mediaDevices_) {
-		if (!media->lock()) {
-			unlockMediaDevices();
+	for (std::shared_ptr<CameraDevice> &device : cameraDevices_) {
+		if (!device->lock()) {
+			unlockCameraDevices();
 			return false;
 		}
 	}
@@ -206,7 +238,7 @@ void PipelineHandler::release(Camera *camera)
 
 	ASSERT(useCount_);
 
-	unlockMediaDevices();
+	unlockCameraDevices();
 
 	releaseDevice(camera);
 
@@ -224,10 +256,10 @@ void PipelineHandler::releaseDevice([[maybe_unused]] Camera *camera)
 {
 }
 
-void PipelineHandler::unlockMediaDevices()
+void PipelineHandler::unlockCameraDevices()
 {
-	for (std::shared_ptr<MediaDevice> &media : mediaDevices_)
-		media->unlock();
+	for (std::shared_ptr<CameraDevice> &device : cameraDevices_)
+		device->unlock();
 }
 
 /**
@@ -606,7 +638,7 @@ void PipelineHandler::registerCamera(std::shared_ptr<Camera> camera)
 {
 	cameras_.push_back(camera);
 
-	if (mediaDevices_.empty())
+	if (cameraDevices_.empty())
 		LOG(Pipeline, Fatal)
 			<< "Registering camera with no media devices!";
 
@@ -615,7 +647,20 @@ void PipelineHandler::registerCamera(std::shared_ptr<Camera> camera)
 	 * to the camera.
 	 */
 	std::vector<int64_t> devnums;
-	for (const std::shared_ptr<MediaDevice> &media : mediaDevices_) {
+	for (const std::shared_ptr<CameraDevice> &device : cameraDevices_) {
+		/*
+		 * Only MediaDevice has entities and devnums.
+		 *
+		 * FIXME: This code path "abuses" RTTI. In general, conditional
+		 * execution based on type information is discouraged and is
+		 * a symptom of a fragile design. However this could be
+		 * considered a temporary workaround, as USB-based devices
+		 * should report devnums as well in future.
+		 */
+		MediaDevice *media = dynamic_cast<MediaDevice *>(device.get());
+		if (!media)
+			continue;
+
 		for (const MediaEntity *entity : media->entities()) {
 			if (entity->pads().size() == 1 &&
 			    (entity->pads()[0]->flags() & MEDIA_PAD_FL_SINK) &&
