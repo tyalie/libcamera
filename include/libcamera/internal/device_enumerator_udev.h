@@ -59,6 +59,7 @@ private:
 	std::string lookupDeviceNode(dev_t devnum);
 
 	int addV4L2Device(dev_t devnum);
+	int createUSBDevice(struct udev_device *dev);
 	void udevNotify();
 
 	struct udev *udev_;

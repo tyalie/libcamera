@@ -7,6 +7,7 @@
 
 #include "libcamera/internal/device_enumerator.h"
 
+#include <algorithm>
 #include <string.h>
 
 #include <libcamera/base/log.h>
@@ -14,6 +15,7 @@
 #include "libcamera/internal/device_enumerator_sysfs.h"
 #include "libcamera/internal/device_enumerator_udev.h"
 #include "libcamera/internal/media_device.h"
+#include "libcamera/internal/usb_device.h"
 
 /**
  * \file device_enumerator.h
@@ -187,6 +189,25 @@ void DeviceEnumerator::addMediaDevice(std::unique_ptr<MediaDevice> media)
 
 	/* \todo To batch multiple additions, emit with a small delay here. */
 	devicesAdded.emit();
+}
+
+void DeviceEnumerator::addUSBDevice(std::unique_ptr<USBDevice> usb)
+{
+	/*
+	 * This is a bit of an hack and could be improved!
+	 *
+	 * Can't use std::sort() + std::unique() because we're storing
+	 * unique_ptr<>
+	 */
+	for (const auto &dev : usbDevices_) {
+		if (dev->pid() == usb->pid() && dev->vid() == usb->vid())
+			return;
+	}
+
+	LOG(DeviceEnumerator, Debug)
+		<< "Added USB device " << usb->vid() << "-" << usb->pid();
+
+	usbDevices_.push_back(std::move(usb));
 }
 
 /**

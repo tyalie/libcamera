@@ -18,6 +18,7 @@
 namespace libcamera {
 
 class MediaDevice;
+class USBDevice;
 
 class DeviceEnumerator
 {
@@ -38,8 +39,12 @@ protected:
 	void addMediaDevice(std::unique_ptr<MediaDevice> media);
 	void removeMediaDevice(const std::string &deviceNode);
 
+	void addUSBDevice(std::unique_ptr<USBDevice> usb);
+	/* \todo implement remove() */
+
 private:
 	std::vector<std::shared_ptr<MediaDevice>> mediaDevices_;
+	std::vector<std::shared_ptr<USBDevice>> usbDevices_;
 };
 
 } /* namespace libcamera */

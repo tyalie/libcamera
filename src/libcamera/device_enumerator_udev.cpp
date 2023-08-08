@@ -12,6 +12,7 @@
 #include <libudev.h>
 #include <list>
 #include <map>
+#include <memory>
 #include <string.h>
 #include <string_view>
 #include <sys/ioctl.h>
@@ -22,6 +23,7 @@
 #include <libcamera/base/log.h>
 
 #include "libcamera/internal/media_device.h"
+#include "libcamera/internal/usb_device.h"
 
 namespace libcamera {
 
@@ -115,6 +117,9 @@ int DeviceEnumeratorUdev::addUdevDevice(struct udev_device *dev)
 		return 0;
 	}
 
+	if (!strcmp(subsystem, "input"))
+		return createUSBDevice(dev);
+
 	return -ENODEV;
 }
 
@@ -133,6 +138,14 @@ int DeviceEnumeratorUdev::enumerate()
 		goto done;
 
 	ret = udev_enumerate_add_match_subsystem(udev_enum, "video4linux");
+	if (ret < 0)
+		goto done;
+
+	/*
+	 * FIXME: this should use the appoprtiate subsystem for USB cameras.
+	 * As a test, match on USB input devices.
+	 */
+	ret = udev_enumerate_add_match_subsystem(udev_enum, "input");
 	if (ret < 0)
 		goto done;
 
@@ -325,6 +338,25 @@ int DeviceEnumeratorUdev::addV4L2Device(dev_t devnum)
 		addMediaDevice(std::move(deps->media_));
 		pending_.remove(*deps);
 	}
+
+	return 0;
+}
+
+int DeviceEnumeratorUdev::createUSBDevice(struct udev_device *dev)
+{
+	/* Get the USB parent device to get VID/PID information. */
+	struct udev_device *usb_device =
+		udev_device_get_parent_with_subsystem_devtype(dev, "usb", "usb_device");
+	if (!usb_device)
+		return -ENODEV;
+
+	const char *vid = udev_device_get_sysattr_value(usb_device, "idVendor");
+	const char *pid = udev_device_get_sysattr_value(usb_device, "idProduct");
+	if (!vid || !pid)
+		return -ENODEV;
+
+	std::unique_ptr<USBDevice> usbDev = std::make_unique<USBDevice>(vid, pid);
+	addUSBDevice(std::move(usbDev));
 
 	return 0;
 }
