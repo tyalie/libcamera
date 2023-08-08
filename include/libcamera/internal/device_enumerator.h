@@ -34,12 +34,12 @@ public:
 	Signal<> devicesAdded;
 
 protected:
-	std::unique_ptr<MediaDevice> createDevice(const std::string &deviceNode);
-	void addDevice(std::unique_ptr<MediaDevice> media);
-	void removeDevice(const std::string &deviceNode);
+	std::unique_ptr<MediaDevice> createMediaDevice(const std::string &deviceNode);
+	void addMediaDevice(std::unique_ptr<MediaDevice> media);
+	void removeMediaDevice(const std::string &deviceNode);
 
 private:
-	std::vector<std::shared_ptr<MediaDevice>> devices_;
+	std::vector<std::shared_ptr<MediaDevice>> mediaDevices_;
 };
 
 } /* namespace libcamera */

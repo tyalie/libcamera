@@ -17,23 +17,26 @@
 
 /**
  * \file device_enumerator.h
- * \brief Enumeration and matching of media devices
+ * \brief Enumeration and matching of camera devices
  *
- * The purpose of device enumeration and matching is to find media devices in
- * the system and map them to pipeline handlers.
+ * The purpose of device enumeration and matching is to find devices in the
+ * system from which a camera can be created and map them to pipeline handlers.
  *
- * At the core of the enumeration is the DeviceEnumerator class, responsible
- * for enumerating all media devices in the system. It handles all interactions
- * with the operating system in a platform-specific way. For each media device
- * found an instance of MediaDevice is created to store information about the
- * device gathered from the kernel through the Media Controller API.
+ * At the core of the enumeration is the DeviceEnumerator class, responsible for
+ * enumerating all devices in the system used to create cameras. It handles all
+ * interactions with the operating system in a platform-specific way. For each
+ * system device found an instance of the opportune class is created to store
+ * information about the device gathered from the kernel through the supported
+ * Linux kernel API, which include the Media Controller API, USB-based devices
+ * and more.
  *
- * The DeviceEnumerator can enumerate all or specific media devices in the
- * system. When a new media device is added the enumerator creates a
- * corresponding MediaDevice instance.
+ * The DeviceEnumerator can enumerate all or specific devices in the system.
+ * When a new device is added the enumerator creates a corresponding instance of
+ * the opportune class. In example, for each enumerated media device a
+ * MediaDevice class instance is created.
  *
  * The enumerator supports searching among enumerated devices based on criteria
- * expressed in a DeviceMatch object.
+ * expressed in a DeviceMatch derived classes instance.
  */
 
 namespace libcamera {
@@ -42,13 +45,14 @@ LOG_DEFINE_CATEGORY(DeviceEnumerator)
 
 /**
  * \class DeviceEnumerator
- * \brief Enumerate, store and search media devices
+ * \brief Enumerate, store and search system devices
  *
  * The DeviceEnumerator class is responsible for all interactions with the
- * operating system related to media devices. It enumerates all media devices
- * in the system, and for each device found creates an instance of the
- * MediaDevice class and stores it internally. The list of media devices can
- * then be searched using DeviceMatch search patterns.
+ * operating system related to camera devices. It enumerates the devices in the
+ * system from which a camera can be created, and for each device found creates
+ * an instance of the opportune class and stores it internally. The list of
+ * devices can then be searched using the corresponding DeviceMatch derived
+ * class search patterns.
  *
  * The enumerator also associates media device entities with device node paths.
  */
@@ -88,7 +92,7 @@ std::unique_ptr<DeviceEnumerator> DeviceEnumerator::create()
 
 DeviceEnumerator::~DeviceEnumerator()
 {
-	for (const std::shared_ptr<MediaDevice> &media : devices_) {
+	for (const std::shared_ptr<MediaDevice> &media : mediaDevices_) {
 		if (media->busy())
 			LOG(DeviceEnumerator, Error)
 				<< "Removing media device " << media->deviceNode()
@@ -106,15 +110,15 @@ DeviceEnumerator::~DeviceEnumerator()
 
 /**
  * \fn DeviceEnumerator::enumerate()
- * \brief Enumerate all media devices in the system
+ * \brief Enumerate all camera devices in the system
  *
- * This function finds and add all media devices in the system to the
+ * This function finds and add all camera devices in the system to the
  * enumerator. It shall be implemented by all subclasses of DeviceEnumerator
  * using system-specific methods.
  *
- * Individual media devices that can't be properly enumerated shall be skipped
- * with a warning message logged, without returning an error. Only errors that
- * prevent enumeration altogether shall be fatal.
+ * Individual devices that can't be properly enumerated shall be skipped with a
+ * warning message logged, without returning an error. Only errors that prevent
+ * enumeration altogether shall be fatal.
  *
  * \context This function is \threadbound.
  *
@@ -132,11 +136,11 @@ DeviceEnumerator::~DeviceEnumerator()
  * shall ensure that device nodes are ready to be used (for instance, if
  * applicable, by waiting for device nodes to be created and access permissions
  * to be set by the system). Once done, it shall add the media device to the
- * system with addDevice().
+ * system with addMediaDevice().
  *
  * \return Created media device instance on success, or nullptr otherwise
  */
-std::unique_ptr<MediaDevice> DeviceEnumerator::createDevice(const std::string &deviceNode)
+std::unique_ptr<MediaDevice> DeviceEnumerator::createMediaDevice(const std::string &deviceNode)
 {
 	std::unique_ptr<MediaDevice> media = std::make_unique<MediaDevice>(deviceNode);
 
@@ -174,12 +178,12 @@ std::unique_ptr<MediaDevice> DeviceEnumerator::createDevice(const std::string &d
  * This function shall be called after all members of the entities of the
  * media graph have been confirmed to be initialized.
  */
-void DeviceEnumerator::addDevice(std::unique_ptr<MediaDevice> media)
+void DeviceEnumerator::addMediaDevice(std::unique_ptr<MediaDevice> media)
 {
 	LOG(DeviceEnumerator, Debug)
 		<< "Added device " << media->deviceNode() << ": " << media->driver();
 
-	devices_.push_back(std::move(media));
+	mediaDevices_.push_back(std::move(media));
 
 	/* \todo To batch multiple additions, emit with a small delay here. */
 	devicesAdded.emit();
@@ -190,17 +194,17 @@ void DeviceEnumerator::addDevice(std::unique_ptr<MediaDevice> media)
  * \param[in] deviceNode Path to the media device to remove
  *
  * Remove the media device identified by \a deviceNode previously added to the
- * enumerator with addDevice(). The media device's MediaDevice::disconnected
- * signal is emitted.
+ * enumerator with addMediaDevice(). The media device's
+ * MediaDevice::disconnected signal is emitted.
  */
-void DeviceEnumerator::removeDevice(const std::string &deviceNode)
+void DeviceEnumerator::removeMediaDevice(const std::string &deviceNode)
 {
 	std::shared_ptr<MediaDevice> media;
 
-	for (auto iter = devices_.begin(); iter != devices_.end(); ++iter) {
+	for (auto iter = mediaDevices_.begin(); iter != mediaDevices_.end(); ++iter) {
 		if ((*iter)->deviceNode() == deviceNode) {
 			media = std::move(*iter);
-			devices_.erase(iter);
+			mediaDevices_.erase(iter);
 			break;
 		}
 	}
@@ -231,7 +235,7 @@ void DeviceEnumerator::removeDevice(const std::string &deviceNode)
  */
 std::shared_ptr<MediaDevice> DeviceEnumerator::search(const MediaDeviceMatch &dm)
 {
-	for (std::shared_ptr<MediaDevice> &media : devices_) {
+	for (std::shared_ptr<MediaDevice> &media : mediaDevices_) {
 		if (media->busy())
 			continue;
 

@@ -73,7 +73,7 @@ int DeviceEnumeratorSysfs::enumerate()
 			continue;
 		}
 
-		std::unique_ptr<MediaDevice> media = createDevice(devnode);
+		std::unique_ptr<MediaDevice> media = createMediaDevice(devnode);
 		if (!media)
 			continue;
 
@@ -85,7 +85,7 @@ int DeviceEnumeratorSysfs::enumerate()
 			continue;
 		}
 
-		addDevice(std::move(media));
+		addMediaDevice(std::move(media));
 	}
 
 	closedir(dir);

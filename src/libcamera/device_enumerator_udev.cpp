@@ -78,7 +78,7 @@ int DeviceEnumeratorUdev::addUdevDevice(struct udev_device *dev)
 
 	if (!strcmp(subsystem, "media")) {
 		std::unique_ptr<MediaDevice> media =
-			createDevice(udev_device_get_devnode(dev));
+			createMediaDevice(udev_device_get_devnode(dev));
 		if (!media)
 			return -ENODEV;
 
@@ -106,7 +106,7 @@ int DeviceEnumeratorUdev::addUdevDevice(struct udev_device *dev)
 			return 0;
 		}
 
-		addDevice(std::move(media));
+		addMediaDevice(std::move(media));
 		return 0;
 	}
 
@@ -322,7 +322,7 @@ int DeviceEnumeratorUdev::addV4L2Device(dev_t devnum)
 		LOG(DeviceEnumerator, Debug)
 			<< "All dependencies for media device "
 			<< deps->media_->deviceNode() << " found";
-		addDevice(std::move(deps->media_));
+		addMediaDevice(std::move(deps->media_));
 		pending_.remove(*deps);
 	}
 
@@ -343,7 +343,7 @@ void DeviceEnumeratorUdev::udevNotify()
 	} else if (action == "remove") {
 		const char *subsystem = udev_device_get_subsystem(dev);
 		if (subsystem && !strcmp(subsystem, "media"))
-			removeDevice(std::string(deviceNode));
+			removeMediaDevice(std::string(deviceNode));
 	}
 
 	udev_device_unref(dev);
