@@ -175,7 +175,7 @@ bool PipelineHandlerVc4::match(DeviceEnumerator *enumerator)
 	 * device nodes due to a sensor subdevice failure.
 	 */
 	for (unsigned int i = 0; i < numUnicamDevices; i++) {
-		DeviceMatch unicam("unicam");
+		MediaDeviceMatch unicam("unicam");
 		MediaDevice *unicamDevice = acquireMediaDevice(enumerator, unicam);
 
 		if (!unicamDevice) {
@@ -183,7 +183,7 @@ bool PipelineHandlerVc4::match(DeviceEnumerator *enumerator)
 			continue;
 		}
 
-		DeviceMatch isp("bcm2835-isp");
+		MediaDeviceMatch isp("bcm2835-isp");
 		MediaDevice *ispDevice = acquireMediaDevice(enumerator, isp);
 
 		if (!ispDevice) {

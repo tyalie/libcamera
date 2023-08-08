@@ -442,7 +442,7 @@ int PipelineHandlerVimc::queueRequestDevice(Camera *camera, Request *request)
 
 bool PipelineHandlerVimc::match(DeviceEnumerator *enumerator)
 {
-	DeviceMatch dm("vimc");
+	MediaDeviceMatch dm("vimc");
 
 	dm.add("Raw Capture 0");
 	dm.add("Raw Capture 1");

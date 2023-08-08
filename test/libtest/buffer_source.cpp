@@ -43,7 +43,7 @@ int BufferSource::allocate(const StreamConfiguration &config)
 		return TestFail;
 	}
 
-	DeviceMatch dm("vivid");
+	MediaDeviceMatch dm("vivid");
 	dm.add(videoDeviceName);
 
 	media_ = enumerator->search(dm);

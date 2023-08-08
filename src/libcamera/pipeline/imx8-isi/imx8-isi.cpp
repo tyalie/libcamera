@@ -971,7 +971,7 @@ int PipelineHandlerISI::queueRequestDevice(Camera *camera, Request *request)
 
 bool PipelineHandlerISI::match(DeviceEnumerator *enumerator)
 {
-	DeviceMatch dm("mxc-isi");
+	MediaDeviceMatch dm("mxc-isi");
 	dm.add("crossbar");
 	dm.add("mxc_isi.0");
 	dm.add("mxc_isi.0.capture");

@@ -29,7 +29,7 @@ public:
 	virtual int init() = 0;
 	virtual int enumerate() = 0;
 
-	std::shared_ptr<MediaDevice> search(const DeviceMatch &dm);
+	std::shared_ptr<MediaDevice> search(const MediaDeviceMatch &dm);
 
 	Signal<> devicesAdded;
 

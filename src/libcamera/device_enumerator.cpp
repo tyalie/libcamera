@@ -229,7 +229,7 @@ void DeviceEnumerator::removeDevice(const std::string &deviceNode)
  *
  * \return pointer to the matching MediaDevice, or nullptr if no match is found
  */
-std::shared_ptr<MediaDevice> DeviceEnumerator::search(const DeviceMatch &dm)
+std::shared_ptr<MediaDevice> DeviceEnumerator::search(const MediaDeviceMatch &dm)
 {
 	for (std::shared_ptr<MediaDevice> &media : devices_) {
 		if (media->busy())

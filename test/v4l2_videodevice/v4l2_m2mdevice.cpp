@@ -65,7 +65,7 @@ protected:
 			return TestFail;
 		}
 
-		DeviceMatch dm("vim2m");
+		MediaDeviceMatch dm("vim2m");
 		dm.add("vim2m-source");
 		dm.add("vim2m-sink");
 

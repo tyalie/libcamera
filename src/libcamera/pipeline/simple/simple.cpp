@@ -1398,7 +1398,7 @@ bool SimplePipelineHandler::match(DeviceEnumerator *enumerator)
 	unsigned int numStreams = 1;
 
 	for (const SimplePipelineInfo &inf : supportedDevices) {
-		DeviceMatch dm(inf.driver);
+		MediaDeviceMatch dm(inf.driver);
 		media_ = acquireMediaDevice(enumerator, dm);
 		if (media_) {
 			info = &inf;
@@ -1410,7 +1410,7 @@ bool SimplePipelineHandler::match(DeviceEnumerator *enumerator)
 		return false;
 
 	for (const auto &[name, streams] : info->converters) {
-		DeviceMatch converterMatch(name);
+		MediaDeviceMatch converterMatch(name);
 		converter_ = acquireMediaDevice(enumerator, converterMatch);
 		if (converter_) {
 			numStreams = streams;

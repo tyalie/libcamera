@@ -90,7 +90,7 @@ functionalities described above. Below is a brief overview of each of those:
    registered with it, by creating instances of the ``MediaDevice`` class and
    storing them.
 
--  `DeviceMatch <https://libcamera.org/api-html/classlibcamera_1_1DeviceMatch.html>`_:
+-  `MediaDeviceMatch <https://libcamera.org/api-html/classlibcamera_1_1MediaDeviceMatch.html>`_:
    Describes a media device search pattern using entity names, or other
    properties.
 
@@ -316,10 +316,10 @@ Matching devices
 ~~~~~~~~~~~~~~~~
 
 Each pipeline handler registered in libcamera gets tested against the current
-system configuration, by matching a ``DeviceMatch`` with the system
-``DeviceEnumerator``. A successful match makes sure all the requested components
-have been registered in the system and allows the pipeline handler to be
-initialized.
+system configuration, by matching an instance of a class derived from
+``DeviceMatch`` with the system ``DeviceEnumerator``. A successful match makes
+sure all the requested components have been registered in the system and allows
+the pipeline handler to be initialized.
 
 The main entry point of a pipeline handler is the `match()`_ class member
 function. When the ``CameraManager`` is started (using the `start()`_ function),

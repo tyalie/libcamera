@@ -22,6 +22,7 @@
 #include "libcamera/internal/camera.h"
 #include "libcamera/internal/camera_manager.h"
 #include "libcamera/internal/device_enumerator.h"
+#include "libcamera/internal/device_match.h"
 #include "libcamera/internal/framebuffer.h"
 #include "libcamera/internal/media_device.h"
 #include "libcamera/internal/request.h"
@@ -129,7 +130,7 @@ PipelineHandler::~PipelineHandler()
  * \return A pointer to the matching MediaDevice, or nullptr if no match is found
  */
 MediaDevice *PipelineHandler::acquireMediaDevice(DeviceEnumerator *enumerator,
-						 const DeviceMatch &dm)
+						 const MediaDeviceMatch &dm)
 {
 	std::shared_ptr<MediaDevice> media = enumerator->search(dm);
 	if (!media)

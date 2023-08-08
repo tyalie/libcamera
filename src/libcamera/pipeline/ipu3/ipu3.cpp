@@ -846,7 +846,7 @@ bool PipelineHandlerIPU3::match(DeviceEnumerator *enumerator)
 {
 	int ret;
 
-	DeviceMatch cio2_dm("ipu3-cio2");
+	MediaDeviceMatch cio2_dm("ipu3-cio2");
 	cio2_dm.add("ipu3-csi2 0");
 	cio2_dm.add("ipu3-cio2 0");
 	cio2_dm.add("ipu3-csi2 1");
@@ -856,7 +856,7 @@ bool PipelineHandlerIPU3::match(DeviceEnumerator *enumerator)
 	cio2_dm.add("ipu3-csi2 3");
 	cio2_dm.add("ipu3-cio2 3");
 
-	DeviceMatch imgu_dm("ipu3-imgu");
+	MediaDeviceMatch imgu_dm("ipu3-imgu");
 	imgu_dm.add("ipu3-imgu 0");
 	imgu_dm.add("ipu3-imgu 0 input");
 	imgu_dm.add("ipu3-imgu 0 parameters");

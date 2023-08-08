@@ -17,11 +17,16 @@ class MediaDevice;
 class DeviceMatch
 {
 public:
-	DeviceMatch(const std::string &driver);
+	virtual bool match(const MediaDevice *device) const = 0;
+};
 
+class MediaDeviceMatch : public DeviceMatch
+{
+public:
 	void add(const std::string &entity);
+	MediaDeviceMatch(const std::string &driver);
 
-	bool match(const MediaDevice *device) const;
+	bool match(const MediaDevice *device) const override;
 
 private:
 	std::string driver_;

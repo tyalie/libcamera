@@ -18,21 +18,38 @@ namespace libcamera {
 
 /**
  * \class DeviceMatch
+ * \brief Pure virtual base class for device serch pattern
+ *
+ * The DeviceMatch class defines the interface to implement device search
+ * patterns to allow searching and matching different device typologies, such as
+ * media devices for V4L2/MC cameras, USB for cameras controlled through the USB
+ * protocol which do not implement the UVC specification and for virtual
+ * cameras.
+ *
+ * Pipeline handlers are expected to instantiate the correct derived class
+ * depending on the device type they support and populate it with their desired
+ * matching criteria. Derived classes of DeviceMatch override the pure virtual
+ * match() function to implement custom matching criteria based on the device
+ * type they represent.
+ */
+
+/**
+ * \class MediaDeviceMatch
  * \brief Description of a media device search pattern
  *
- * The DeviceMatch class describes a media device using properties from the
+ * The MediaDeviceMatch class describes a media device using properties from the
  * Media Controller struct media_device_info, entity names in the media graph
  * or other properties that can be used to identify a media device.
  *
  * The description is meant to be filled by pipeline managers and passed to a
  * device enumerator to find matching media devices.
  *
- * A DeviceMatch is created with a specific Linux device driver in mind,
+ * A MediaDeviceMatch is created with a specific Linux device driver in mind,
  * therefore the name of the driver is a required property. One or more Entity
  * names can be added as match criteria.
  *
- * Pipeline handlers are recommended to add entities to DeviceMatch as
- * appropriare to ensure that the media device they need can be uniquely
+ * Pipeline handlers are recommended to add entities to MediaDeviceMatch as
+ * appropriate to ensure that the media device they need can be uniquely
  * identified. This is useful when the corresponding kernel driver can produce
  * different graphs, for instance as a result of different driver versions or
  * hardware configurations, and not all those graphs are suitable for a pipeline
@@ -43,7 +60,7 @@ namespace libcamera {
  * \brief Construct a media device search pattern
  * \param[in] driver The Linux device driver name that created the media device
  */
-DeviceMatch::DeviceMatch(const std::string &driver)
+MediaDeviceMatch::MediaDeviceMatch(const std::string &driver)
 	: driver_(driver)
 {
 }
@@ -52,7 +69,7 @@ DeviceMatch::DeviceMatch(const std::string &driver)
  * \brief Add a media entity name to the search pattern
  * \param[in] entity The name of the entity in the media graph
  */
-void DeviceMatch::add(const std::string &entity)
+void MediaDeviceMatch::add(const std::string &entity)
 {
 	entities_.push_back(entity);
 }
@@ -67,7 +84,7 @@ void DeviceMatch::add(const std::string &entity)
  *
  * \return True if the media device matches the search pattern, false otherwise
  */
-bool DeviceMatch::match(const MediaDevice *device) const
+bool MediaDeviceMatch::match(const MediaDevice *device) const
 {
 	if (driver_ != device->driver())
 		return false;

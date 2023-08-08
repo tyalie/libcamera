@@ -1155,7 +1155,7 @@ bool PipelineHandlerRkISP1::match(DeviceEnumerator *enumerator)
 {
 	const MediaPad *pad;
 
-	DeviceMatch dm("rkisp1");
+	MediaDeviceMatch dm("rkisp1");
 	dm.add("rkisp1_isp");
 	dm.add("rkisp1_resizer_mainpath");
 	dm.add("rkisp1_mainpath");

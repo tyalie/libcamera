@@ -30,7 +30,7 @@ int V4L2VideoDeviceTest::init()
 		return TestFail;
 	}
 
-	DeviceMatch dm(driver_);
+	MediaDeviceMatch dm(driver_);
 	dm.add(entity_);
 
 	media_ = enumerator_->search(dm);

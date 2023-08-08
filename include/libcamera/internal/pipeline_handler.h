@@ -28,7 +28,7 @@ class Camera;
 class CameraConfiguration;
 class CameraManager;
 class DeviceEnumerator;
-class DeviceMatch;
+class MediaDeviceMatch;
 class FrameBuffer;
 class MediaDevice;
 class PipelineHandler;
@@ -43,7 +43,7 @@ public:
 
 	virtual bool match(DeviceEnumerator *enumerator) = 0;
 	MediaDevice *acquireMediaDevice(DeviceEnumerator *enumerator,
-					const DeviceMatch &dm);
+					const MediaDeviceMatch &dm);
 
 	bool acquire();
 	void release(Camera *camera);
