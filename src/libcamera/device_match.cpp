@@ -7,7 +7,9 @@
 
 #include "libcamera/internal/device_match.h"
 
+#include "libcamera/internal/camera_device.h"
 #include "libcamera/internal/media_device.h"
+#include "libcamera/internal/usb_device.h"
 
 /**
  * \file device_match.h
@@ -84,15 +86,17 @@ void MediaDeviceMatch::add(const std::string &entity)
  *
  * \return True if the media device matches the search pattern, false otherwise
  */
-bool MediaDeviceMatch::match(const MediaDevice *device) const
+bool MediaDeviceMatch::match(const CameraDevice *device) const
 {
-	if (driver_ != device->driver())
+	const MediaDevice *media = static_cast<const MediaDevice *>(device);
+
+	if (driver_ != media->driver())
 		return false;
 
 	for (const std::string &name : entities_) {
 		bool found = false;
 
-		for (const MediaEntity *entity : device->entities()) {
+		for (const MediaEntity *entity : media->entities()) {
 			if (name == entity->name()) {
 				found = true;
 				break;
@@ -104,6 +108,21 @@ bool MediaDeviceMatch::match(const MediaDevice *device) const
 	}
 
 	return true;
+}
+
+/**
+ * \brief Compare a search pattern with a USB device
+ * \param[in] device The USB device
+ *
+ * Matching is performed on the USB device vendorId and productId.
+ *
+ * \return True if the USB device matches the search pattern, false otherwise
+ */
+bool USBDeviceMatch::match(const CameraDevice *device) const
+{
+	const USBDevice *usb = static_cast<const USBDevice *>(device);
+
+	return usb->vid() == vid_ && usb->pid() == pid_;
 }
 
 } /* namespace libcamera */
