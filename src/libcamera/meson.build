@@ -80,6 +80,7 @@ if not cc.has_function('dlopen')
 endif
 libudev = dependency('libudev', required : get_option('udev'))
 libyaml = dependency('yaml-0.1', required : false)
+libusb = dependency('libusb-1.0', required : false)
 
 # Use one of gnutls or libcrypto (provided by OpenSSL), trying gnutls first.
 libcrypto = dependency('gnutls', required : false)
@@ -112,6 +113,12 @@ if libudev.found()
     config_h.set('HAVE_LIBUDEV', 1)
     libcamera_sources += files([
         'device_enumerator_udev.cpp',
+    ])
+endif
+
+if libusb.found()
+    config_h.set('HAVE_LIBUSB', 1)
+    libcamera_sources += files([
     ])
 endif
 
@@ -166,6 +173,7 @@ libcamera_deps += [
     libdl,
     liblttng,
     libudev,
+    libusb,
     libyaml,
 ]
 

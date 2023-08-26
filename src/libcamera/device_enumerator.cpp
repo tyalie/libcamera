@@ -12,6 +12,10 @@
 
 #include <libcamera/base/log.h>
 
+#ifdef HAVE_LIBUSB
+#include <libusb-1.0/libusb.h>
+#endif
+
 #include "libcamera/internal/device_enumerator_sysfs.h"
 #include "libcamera/internal/device_enumerator_udev.h"
 #include "libcamera/internal/media_device.h"
@@ -75,6 +79,12 @@ std::unique_ptr<DeviceEnumerator> DeviceEnumerator::create()
 {
 	std::unique_ptr<DeviceEnumerator> enumerator;
 
+#ifdef HAVE_LIBUSB
+	libusb_set_option(NULL, LIBUSB_OPTION_NO_DEVICE_DISCOVERY, NULL);
+	// initialize default libusb context, must be called before libusb usage
+	libusb_init(NULL);
+#endif
+
 #ifdef HAVE_LIBUDEV
 	enumerator = std::make_unique<DeviceEnumeratorUdev>();
 	if (!enumerator->init())
@@ -100,6 +110,10 @@ DeviceEnumerator::~DeviceEnumerator()
 				<< "Removing media device " << media->deviceNode()
 				<< " while still in use";
 	}
+
+#ifdef HAVE_LIBUSB
+	libusb_exit(NULL);
+#endif
 }
 
 /**
