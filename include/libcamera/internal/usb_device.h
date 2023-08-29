@@ -40,6 +40,7 @@ public:
 	void unlock() override
 	{
 	}
+	~USBDevice() {}
 
 	uint16_t pid() const { return pid_; }
 	uint16_t vid() const { return vid_; }

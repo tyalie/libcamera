@@ -17,6 +17,8 @@ public:
 	{
 	}
 
+	virtual ~CameraDevice() = default;
+
 	virtual bool acquire() = 0;
 	virtual void release() = 0;
 	bool busy() const { return acquired_; }

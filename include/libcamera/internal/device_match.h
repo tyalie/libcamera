@@ -17,6 +17,8 @@ class CameraDevice;
 class DeviceMatch
 {
 public:
+	virtual ~DeviceMatch() = default;
+
 	virtual bool match(const CameraDevice *device) const = 0;
 };
 
@@ -25,6 +27,7 @@ class MediaDeviceMatch : public DeviceMatch
 public:
 	void add(const std::string &entity);
 	MediaDeviceMatch(const std::string &driver);
+	~MediaDeviceMatch() {}
 
 	bool match(const CameraDevice *device) const override;
 
@@ -40,6 +43,7 @@ public:
 		: vid_(vid), pid_(pid)
 	{
 	}
+	~USBDeviceMatch() {}
 
 	bool match(const CameraDevice *device) const override;
 
