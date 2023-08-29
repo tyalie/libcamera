@@ -72,18 +72,20 @@ public:
 
 bool PipelineHandlerUSB::match(DeviceEnumerator *enumerator)
 {
-	USBDeviceMatch dm("046d", "c52b");
+	USBDeviceMatch dm(0x0525, 0xa4a0);
 	USBDevice *usbDev = acquireUSBDevice(enumerator, dm);
 	if (!usbDev)
 		return false;
 
 	std::unique_ptr<USBCameraData> data = std::make_unique<USBCameraData>(this);
-	std::string id = usbDev->vid() + "/" + usbDev->pid();
+	std::string id = usbDev->simpleName() + " [" + usbDev->deviceNode() + "]";
 	std::set<Stream *> streams{ &data->stream_ };
 
 	std::shared_ptr<Camera> camera =
 		Camera::create(std::move(data), id, streams);
 	registerCamera(std::move(camera));
+
+	hotplugCameraDevice(usbDev);
 
 	return true;
 }
