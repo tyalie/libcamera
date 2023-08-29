@@ -220,7 +220,7 @@ void DeviceEnumerator::addUSBDevice(std::unique_ptr<USBDevice> usb)
 	}
 
 	LOG(DeviceEnumerator, Debug)
-		<< "Added USB device " << usb->vid() << "-" << usb->pid();
+		<< "Added USB device " << usb->simpleName();
 
 	usbDevices_.push_back(std::move(usb));
 }
@@ -295,10 +295,13 @@ std::shared_ptr<MediaDevice> DeviceEnumerator::search(const MediaDeviceMatch &dm
 std::shared_ptr<USBDevice> DeviceEnumerator::search(const USBDeviceMatch &dm)
 {
 	for (std::shared_ptr<USBDevice> &usb : usbDevices_) {
+		if (usb->busy())
+			continue;
+
 		if (dm.match(usb.get())) {
 			LOG(DeviceEnumerator, Debug)
 				<< "Successful match for USB device "
-				<< usb->vid() << "-" << usb->pid();
+				<< usb->simpleName();
 			return usb;
 		}
 	}

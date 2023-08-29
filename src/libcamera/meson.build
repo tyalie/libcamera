@@ -119,6 +119,7 @@ endif
 if libusb.found()
     config_h.set('HAVE_LIBUSB', 1)
     libcamera_sources += files([
+        'usb_device.cpp',
     ])
 endif
 

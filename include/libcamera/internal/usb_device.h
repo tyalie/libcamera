@@ -7,11 +7,19 @@
 
 #pragma once
 
+#include <fcntl.h>
+
+#include <libcamera/base/log.h>
+#include <libcamera/base/unique_fd.h>
+
 #include "libcamera/internal/camera_device.h"
+
+struct libusb_device_handle;
+struct libusb_device;
 
 namespace libcamera {
 
-class USBDevice : public CameraDevice
+class USBDevice : protected Loggable, public CameraDevice
 {
 public:
 	USBDevice(uint16_t *vid, uint16_t *pid)
@@ -19,34 +27,35 @@ public:
 	{
 	}
 
-	/* \todo Implement acquire/release and lock/unlock */
-	bool acquire() override
-	{
-		/* This only works within the same process!! */
-		if (acquired_)
-			return false;
 
-		acquired_ = true;
-		return true;
-	}
-	void release() override
-	{
-	}
+	~USBDevice();
 
-	bool lock() override
-	{
-		return true;
-	}
-	void unlock() override
-	{
-	}
-	~USBDevice() {}
+	bool acquire() override;
+	void release() override;
+	bool lock() override;
+	void unlock() override;
+
+	std::shared_ptr<libusb_device_handle> getUSBHandle();
+	libusb_device *getUSBDevice();
 
 	uint16_t pid() const { return pid_; }
 	uint16_t vid() const { return vid_; }
+	const std::string &deviceNode() const { return deviceNode_; }
+
+	std::string simpleName() const;
+
+protected:
+	std::string logPrefix() const override;
 
 private:
+	int open(int flag = O_RDWR);
+	void close();
+
 	uint16_t vid_, pid_;
+
+	std::string deviceNode_;
+	UniqueFD fd_;
+	std::shared_ptr<libusb_device_handle> usb_handle_;
 };
 
 } /* namespace libcamera */
