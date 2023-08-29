@@ -176,6 +176,8 @@ std::unique_ptr<T> DeviceEnumerator::createDevice(const std::string &deviceNode)
 }
 
 template std::unique_ptr<MediaDevice> DeviceEnumerator::createDevice<MediaDevice>(const std::string &);
+
+template std::unique_ptr<USBDevice> DeviceEnumerator::createDevice<USBDevice>(const std::string &);
 /**
 * \var DeviceEnumerator::devicesAdded
 * \brief Notify of new media devices being found
@@ -215,7 +217,7 @@ void DeviceEnumerator::addUSBDevice(std::unique_ptr<USBDevice> usb)
 	 * unique_ptr<>
 	 */
 	for (const auto &dev : usbDevices_) {
-		if (dev->pid() == usb->pid() && dev->vid() == usb->vid())
+		if (dev->deviceNode() == usb->deviceNode())
 			return;
 	}
 

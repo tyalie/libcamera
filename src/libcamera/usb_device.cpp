@@ -39,6 +39,30 @@ std::string USBDevice::logPrefix() const
 	return simpleName() + " [ libusb ]";
 }
 
+int USBDevice::populate()
+{
+	int ret;
+	struct libusb_device_descriptor desc;
+
+	ret = open(O_RDONLY);
+	if (ret)
+		return ret;
+
+	ret = libusb_get_device_descriptor(getUSBDevice(), &desc);
+
+	if (ret) {
+		LOG(USBDevice, Error) << "Couldn't open device descriptor";
+		goto done;
+	}
+
+	vid_ = desc.idVendor;
+	pid_ = desc.idProduct;
+
+done:
+	close();
+	return ret;
+}
+
 int USBDevice::open(int flag)
 {
 	if (fd_.isValid()) {

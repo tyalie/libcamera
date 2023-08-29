@@ -117,8 +117,14 @@ int DeviceEnumeratorUdev::addUdevDevice(struct udev_device *dev)
 		return 0;
 	}
 
-	if (!strcmp(subsystem, "input"))
-		return createUSBDevice(dev);
+	if (!strcmp(subsystem, "input")) {
+		std::unique_ptr<USBDevice> usb = createDevice<USBDevice>(udev_device_get_devnode(dev));
+		if (!usb)
+			return -ENODEV;
+
+		addUSBDevice(std::move(usb));
+		return 0;
+	}
 
 	return -ENODEV;
 }
@@ -338,25 +344,6 @@ int DeviceEnumeratorUdev::addV4L2Device(dev_t devnum)
 		addMediaDevice(std::move(deps->media_));
 		pending_.remove(*deps);
 	}
-
-	return 0;
-}
-
-int DeviceEnumeratorUdev::createUSBDevice(struct udev_device *dev)
-{
-	/* Get the USB parent device to get VID/PID information. */
-	struct udev_device *usb_device =
-		udev_device_get_parent_with_subsystem_devtype(dev, "usb", "usb_device");
-	if (!usb_device)
-		return -ENODEV;
-
-	const char *vid = udev_device_get_sysattr_value(usb_device, "idVendor");
-	const char *pid = udev_device_get_sysattr_value(usb_device, "idProduct");
-	if (!vid || !pid)
-		return -ENODEV;
-
-	std::unique_ptr<USBDevice> usbDev = std::make_unique<USBDevice>(vid, pid);
-	addUSBDevice(std::move(usbDev));
 
 	return 0;
 }

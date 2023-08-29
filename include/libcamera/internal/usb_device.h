@@ -22,11 +22,10 @@ namespace libcamera {
 class USBDevice : protected Loggable, public CameraDevice
 {
 public:
-	USBDevice(uint16_t *vid, uint16_t *pid)
-		: CameraDevice(), vid_(vid), pid_(pid)
+	USBDevice(const std::string &deviceNode)
+		: CameraDevice(), deviceNode_(deviceNode)
 	{
 	}
-
 
 	~USBDevice();
 
@@ -34,6 +33,8 @@ public:
 	void release() override;
 	bool lock() override;
 	void unlock() override;
+
+	int populate();
 
 	std::shared_ptr<libusb_device_handle> getUSBHandle();
 	libusb_device *getUSBDevice();
