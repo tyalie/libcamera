@@ -25,6 +25,10 @@ public:
 private:
 	int populateMediaDevice(MediaDevice *media);
 	std::string lookupDeviceNode(int major, int minor);
+
+	int enumerateMediaDevice();
+	int enumerateUSBDevice();
+	int enumerateUSBBusDevices(const std::string &busdir);
 };
 
 } /* namespace libcamera */
