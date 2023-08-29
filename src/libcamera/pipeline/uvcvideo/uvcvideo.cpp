@@ -406,7 +406,7 @@ bool PipelineHandlerUVC::match(DeviceEnumerator *enumerator)
 	registerCamera(std::move(camera));
 
 	/* Enable hot-unplug notifications. */
-	hotplugMediaDevice(media);
+	hotplugCameraDevice(media);
 
 	return true;
 }

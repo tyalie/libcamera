@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <libcamera/base/signal.h>
 namespace libcamera {
 
 class CameraDevice
@@ -25,6 +26,8 @@ public:
 
 	virtual bool lock() = 0;
 	virtual void unlock() = 0;
+
+	Signal<> disconnected;
 
 protected:
 	bool acquired_;

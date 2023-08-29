@@ -15,7 +15,6 @@
 #include <linux/media.h>
 
 #include <libcamera/base/log.h>
-#include <libcamera/base/signal.h>
 #include <libcamera/base/unique_fd.h>
 
 #include "libcamera/internal/camera_device.h"
@@ -53,8 +52,6 @@ public:
 			const MediaEntity *sink, unsigned int sinkIdx);
 	MediaLink *link(const MediaPad *source, const MediaPad *sink);
 	int disableLinks();
-
-	Signal<> disconnected;
 
 protected:
 	std::string logPrefix() const override;

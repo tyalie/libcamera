@@ -693,15 +693,15 @@ void PipelineHandler::registerCamera(std::shared_ptr<Camera> camera)
  * handler gets notified and automatically disconnects all the cameras it has
  * registered without requiring any manual intervention.
  */
-void PipelineHandler::hotplugMediaDevice(MediaDevice *media)
+void PipelineHandler::hotplugCameraDevice(CameraDevice *media)
 {
-	media->disconnected.connect(this, [=]() { mediaDeviceDisconnected(media); });
+	media->disconnected.connect(this, [=]() { cameraDeviceDisconnected(media); });
 }
 
 /**
  * \brief Slot for the MediaDevice disconnected signal
  */
-void PipelineHandler::mediaDeviceDisconnected(MediaDevice *media)
+void PipelineHandler::cameraDeviceDisconnected(CameraDevice *media)
 {
 	media->disconnected.disconnect(this);
 

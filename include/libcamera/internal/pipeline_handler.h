@@ -77,7 +77,7 @@ public:
 
 protected:
 	void registerCamera(std::shared_ptr<Camera> camera);
-	void hotplugMediaDevice(MediaDevice *media);
+	void hotplugCameraDevice(CameraDevice *media);
 
 	virtual int queueRequestDevice(Camera *camera, Request *request) = 0;
 	virtual void stopDevice(Camera *camera) = 0;
@@ -89,7 +89,7 @@ protected:
 private:
 	void unlockCameraDevices();
 
-	void mediaDeviceDisconnected(MediaDevice *media);
+	void cameraDeviceDisconnected(CameraDevice *media);
 	virtual void disconnect();
 
 	void doQueueRequest(Request *request);
