@@ -41,9 +41,9 @@ protected:
 
 	void addMediaDevice(std::unique_ptr<MediaDevice> media);
 	void addUSBDevice(std::unique_ptr<USBDevice> usb);
-	/* \todo implement remove() */
 
 	void removeMediaDevice(const std::string &deviceNode);
+	void removeUSBDevice(const std::string &deviceNode);
 
 private:
 	std::vector<std::shared_ptr<MediaDevice>> mediaDevices_;

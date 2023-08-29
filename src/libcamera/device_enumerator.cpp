@@ -225,6 +225,7 @@ void DeviceEnumerator::addUSBDevice(std::unique_ptr<USBDevice> usb)
 		<< "Added USB device " << usb->simpleName();
 
 	usbDevices_.push_back(std::move(usb));
+	devicesAdded.emit();
 }
 
 /**
@@ -238,6 +239,11 @@ void DeviceEnumerator::addUSBDevice(std::unique_ptr<USBDevice> usb)
 void DeviceEnumerator::removeMediaDevice(const std::string &deviceNode)
 {
 	return removeDevice<MediaDevice>(deviceNode, mediaDevices_);
+}
+
+void DeviceEnumerator::removeUSBDevice(const std::string &deviceNode)
+{
+	return removeDevice<USBDevice>(deviceNode, usbDevices_);
 }
 
 template<class T>
