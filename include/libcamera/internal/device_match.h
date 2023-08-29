@@ -36,7 +36,7 @@ private:
 class USBDeviceMatch : public DeviceMatch
 {
 public:
-	USBDeviceMatch(const std::string &vid, const std::string &pid)
+	USBDeviceMatch(uint16_t vid, uint16_t pid)
 		: vid_(vid), pid_(pid)
 	{
 	}
@@ -44,8 +44,8 @@ public:
 	bool match(const CameraDevice *device) const override;
 
 private:
-	std::string vid_;
-	std::string pid_;
+	uint16_t vid_;
+	uint16_t pid_;
 };
 
 }; /* namespace libcamera */

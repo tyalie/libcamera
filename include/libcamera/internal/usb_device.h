@@ -14,7 +14,7 @@ namespace libcamera {
 class USBDevice : public CameraDevice
 {
 public:
-	USBDevice(const char *vid, const char *pid)
+	USBDevice(uint16_t *vid, uint16_t *pid)
 		: CameraDevice(), vid_(vid), pid_(pid)
 	{
 	}
@@ -41,12 +41,11 @@ public:
 	{
 	}
 
-	const std::string &vid() const { return vid_; };
-	const std::string &pid() const { return pid_; };
+	uint16_t pid() const { return pid_; }
+	uint16_t vid() const { return vid_; }
 
 private:
-	std::string vid_;
-	std::string pid_;
+	uint16_t vid_, pid_;
 };
 
 } /* namespace libcamera */
