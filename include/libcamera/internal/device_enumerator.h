@@ -36,16 +36,21 @@ public:
 	Signal<> devicesAdded;
 
 protected:
-	std::unique_ptr<MediaDevice> createMediaDevice(const std::string &deviceNode);
-	void addMediaDevice(std::unique_ptr<MediaDevice> media);
-	void removeMediaDevice(const std::string &deviceNode);
+	template<class T>
+	std::unique_ptr<T> createDevice(const std::string &deviceNode);
 
+	void addMediaDevice(std::unique_ptr<MediaDevice> media);
 	void addUSBDevice(std::unique_ptr<USBDevice> usb);
 	/* \todo implement remove() */
+
+	void removeMediaDevice(const std::string &deviceNode);
 
 private:
 	std::vector<std::shared_ptr<MediaDevice>> mediaDevices_;
 	std::vector<std::shared_ptr<USBDevice>> usbDevices_;
+
+	template<class T>
+	void removeDevice(const std::string &deviceNode, std::vector<std::shared_ptr<T>> &devices);
 };
 
 } /* namespace libcamera */

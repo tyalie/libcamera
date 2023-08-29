@@ -80,7 +80,7 @@ int DeviceEnumeratorUdev::addUdevDevice(struct udev_device *dev)
 
 	if (!strcmp(subsystem, "media")) {
 		std::unique_ptr<MediaDevice> media =
-			createMediaDevice(udev_device_get_devnode(dev));
+			createDevice<MediaDevice>(udev_device_get_devnode(dev));
 		if (!media)
 			return -ENODEV;
 

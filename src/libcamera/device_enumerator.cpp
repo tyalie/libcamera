@@ -156,25 +156,26 @@ DeviceEnumerator::~DeviceEnumerator()
  *
  * \return Created media device instance on success, or nullptr otherwise
  */
-std::unique_ptr<MediaDevice> DeviceEnumerator::createMediaDevice(const std::string &deviceNode)
+template<class T>
+std::unique_ptr<T> DeviceEnumerator::createDevice(const std::string &deviceNode)
 {
-	std::unique_ptr<MediaDevice> media = std::make_unique<MediaDevice>(deviceNode);
+	std::unique_ptr<T> media = std::make_unique<T>(deviceNode);
 
 	int ret = media->populate();
 	if (ret < 0) {
 		LOG(DeviceEnumerator, Info)
-			<< "Unable to populate media device " << deviceNode
+			<< "Unable to populate camera device " << deviceNode
 			<< " (" << strerror(-ret) << "), skipping";
 		return nullptr;
 	}
 
 	LOG(DeviceEnumerator, Debug)
-		<< "New media device \"" << media->driver()
-		<< "\" created from " << deviceNode;
+		<< "New camera device (" << deviceNode << ")";
 
 	return media;
 }
 
+template std::unique_ptr<MediaDevice> DeviceEnumerator::createDevice<MediaDevice>(const std::string &);
 /**
 * \var DeviceEnumerator::devicesAdded
 * \brief Notify of new media devices being found
@@ -234,12 +235,18 @@ void DeviceEnumerator::addUSBDevice(std::unique_ptr<USBDevice> usb)
  */
 void DeviceEnumerator::removeMediaDevice(const std::string &deviceNode)
 {
-	std::shared_ptr<MediaDevice> media;
+	return removeDevice<MediaDevice>(deviceNode, mediaDevices_);
+}
 
-	for (auto iter = mediaDevices_.begin(); iter != mediaDevices_.end(); ++iter) {
+template<class T>
+void DeviceEnumerator::removeDevice(const std::string &deviceNode, std::vector<std::shared_ptr<T>> &devices)
+{
+	std::shared_ptr<T> media;
+
+	for (auto iter = devices.begin(); iter != devices.end(); ++iter) {
 		if ((*iter)->deviceNode() == deviceNode) {
 			media = std::move(*iter);
-			mediaDevices_.erase(iter);
+			devices.erase(iter);
 			break;
 		}
 	}
